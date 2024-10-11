@@ -5,6 +5,8 @@ const jwt = require('jsonwebtoken');
 require('dotenv').config();
 const twilio = require('twilio');
 const redisClient = require('../config/redisClient'); // Importer le client Redis
+const { updateUserProfile } = require('../controllers/userController');
+const auth = require('../middleware/auth');
 const router = express.Router();
 
 console.log('JWT_SECRET:', process.env.JWT_SECRET);
@@ -128,5 +130,8 @@ router.post('/verify-code', async (req, res) => {
       res.status(500).json({ error: 'Échec de la vérification du code' });
     }
 });
+
+// Route pour mettre à jour le profil utilisateur
+router.put('/profile', auth, updateUserProfile);
 
 module.exports = router;
