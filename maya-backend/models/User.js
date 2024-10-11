@@ -30,6 +30,10 @@ const userSchema = new mongoose.Schema({
     verificationCodeExpires: {
       type: Date,
       default: null
+    },
+    profilePhotos: {
+      type: [String], // Tableau d'URLs de photos de profil
+      default: []
     }
 });
 
