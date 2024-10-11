@@ -5,7 +5,7 @@ const jwt = require('jsonwebtoken');
 require('dotenv').config();
 const twilio = require('twilio');
 const redisClient = require('../config/redisClient'); // Importer le client Redis
-const { updateUserProfile, addProfilePhoto, removeProfilePhoto, loginUser } = require('../controllers/userController');
+const { updateUserProfile, addProfilePhoto, removeProfilePhoto, loginUser, getUserInfo } = require('../controllers/userController'); // Importer getUserInfo
 const auth = require('../middleware/auth');
 const router = express.Router();
 
@@ -47,5 +47,8 @@ router.post('/profile/photo', auth, addProfilePhoto);
 
 // Route pour supprimer une photo de profil
 router.delete('/profile/photo', auth, removeProfilePhoto);
+
+// Route pour récupérer les informations de l'utilisateur
+router.get('/profile', auth, getUserInfo);
 
 module.exports = router;
