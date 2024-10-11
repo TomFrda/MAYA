@@ -2,9 +2,17 @@ const express = require('express');
 const User = require('../models/User');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+require('dotenv').config();
 const twilio = require('twilio');
 const redisClient = require('../config/redisClient'); // Importer le client Redis
 const router = express.Router();
+
+console.log('JWT_SECRET:', process.env.JWT_SECRET);
+console.log('TWILIO_ACCOUNT_SID:', process.env.TWILIO_ACCOUNT_SID);
+console.log('TWILIO_AUTH_TOKEN:', process.env.TWILIO_AUTH_TOKEN);
+console.log('TWILIO_PHONE_NUMBER:', process.env.TWILIO_PHONE_NUMBER);
+
+const client = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
 
 // Route d'inscription
 router.post('/signup', async (req, res) => {
@@ -64,9 +72,6 @@ router.post('/login', async (req, res) => {
       res.status(500).json({ error: 'Erreur serveur', details: err.message }); // Renvoie le message d'erreur exact
     }
 });  
-
-// Configurer Twilio avec les variables d'environnement
-const client = new twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
 
 // Route pour envoyer le code de vérification
 router.post('/verify-phone', async (req, res) => {
