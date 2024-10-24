@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Socket.IO Client</title>
+  <script src="https://cdn.socket.io/4.0.0/socket.io.min.js"></script>
+</head>
+<body>
+  <h1>Socket.IO Client</h1>
+  <form id="messageForm">
+    <input type="text" id="messageInput" placeholder="Entrez votre message" required>
+    <button type="submit">Envoyer</button>
+  </form>
+  <div id="messages"></div>
+  <script>
+    const socket = io('http://localhost:5000');
+    const userId = 'user123'; // Remplacez par l'ID de l'utilisateur connecté
+
+    socket.on('connect', () => {
+      console.log('Connecté au serveur:', socket.id);
+      socket.emit('register', userId);
+    });
+
+    socket.on('receiveMessage', (data) => {
+      console.log('Message reçu:', data);
+      const messagesDiv = document.getElementById('messages');
+      const messageElement = document.createElement('p');
+      messageElement.textContent = `De ${data.from}: ${data.message}`;
+      messagesDiv.appendChild(messageElement);
+    });
+
+    socket.on('disconnect', () => {
+      console.log('Déconnecté du serveur');
+    });
+
+    const messageForm = document.getElementById('messageForm');
+    messageForm.addEventListener('submit', (event) => {
+      event.preventDefault();
+      const messageInput = document.getElementById('messageInput');
+      const message = messageInput.value;
+      socket.emit('sendMessage', { to: 'user456', message }); // Remplacez 'user456' par l'ID de l'utilisateur destinataire
+      messageInput.value = '';
+      const messagesDiv = document.getElementById('messages');
+      const messageElement = document.createElement('p');
+      messageElement.textContent = `Vous: ${message}`;
+      messagesDiv.appendChild(messageElement);
+    });
+  </script>
+</body>
+</html>

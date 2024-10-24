@@ -39,6 +39,73 @@ router.post('/signup', async (req, res) => {
 // Route de connexion
 router.post('/login', loginUser);
 
+router.post('/verify-phone', async (req, res) => {
+  const { phone_number } = req.body;
+  try {
+    const verificationCode = Math.floor(100000 + Math.random() * 900000); // Code à 6 chiffres
+    const expirationTime = new Date(Date.now() + 5 * 60000); // Expiration dans 5 minutes
+
+    // Mettre à jour l'utilisateur avec le code et l'expiration
+    const user = await User.findOneAndUpdate(
+      { phone_number },
+      { verificationCode, verificationCodeExpires: expirationTime },
+      { new: true }
+    );
+    if (!user) {
+      return res.status(404).json({ error: 'Utilisateur introuvable' });
+    }
+    // Envoyer le SMS avec Twilio
+    await client.messages.create({
+      body: `Votre code de vérification est : ${verificationCode}`,
+      from: process.env.TWILIO_PHONE_NUMBER,
+      to: phone_number
+    });
+    res.status(200).json({ message: 'Code de vérification envoyé par SMS' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Échec de l\'envoi du SMS' });
+  }
+});
+
+// Route pour vérifier le code de vérification
+router.post('/verify-code', async (req, res) => {
+  const { phone_number, verificationCode } = req.body;
+
+  try {
+    const user = await User.findOne({ phone_number });
+
+    if (!user) {
+      return res.status(404).json({ error: 'Utilisateur introuvable' });
+    }
+
+    // Vérifier que le code correspond et qu'il n'a pas expiré
+    if (user.verificationCode !== verificationCode || user.verificationCodeExpires < Date.now()) {
+      return res.status(400).json({ error: 'Code incorrect ou expiré' });
+    }
+
+    // Le code est correct, on peut considérer que le numéro est vérifié
+    res.status(200).json({ message: 'Numéro de téléphone vérifié avec succès' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Échec de la vérification du code' });
+  }
+});
+
+// Route pour envoyer un message à un utilisateur spécifique
+router.post('/send-message', auth, (req, res) => {
+  const { to, message } = req.body;
+  const from = req.user.id;
+
+  // Envoyer le message via Socket.IO
+  const recipientSocketId = users[to];
+  if (recipientSocketId) {
+    io.to(recipientSocketId).emit('receiveMessage', { from, message });
+    res.status(200).json({ message: 'Message envoyé avec succès' });
+  } else {
+    res.status(404).json({ error: 'Utilisateur non connecté' });
+  }
+});
+
 // Route pour mettre à jour le profil utilisateur
 router.put('/profile', auth, updateUserProfile);
 
