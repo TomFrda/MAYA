@@ -11,7 +11,9 @@ const { updateUserProfile,
         loginUser,
         getUserInfo,
         likeProfile,
-        matchUsers,} = require('../controllers/userController'); // Importer getUserInfo
+        matchUsers,
+        getUserMatches,
+      } = require('../controllers/userController'); // Importer getUserInfo
 const auth = require('../middleware/auth');
 const router = express.Router();
 
@@ -129,5 +131,7 @@ router.post('/like-profile', auth, likeProfile);
 
 // Add this route in userRoutes.js
 router.post('/check-match', auth, matchUsers);
+
+router.get('/matches', auth, getUserMatches);
 
 module.exports = router;

@@ -196,6 +196,38 @@ const matchUsers = async (req, res) => {
   }
 };
 
+// Add this controller function to userController.js
+const getUserMatches = async (req, res) => {
+  try {
+    const userId = req.user.id;
+
+    // Find all matches where the user is involved
+    const matches = await Match.find({
+      users: userId
+    })
+    .populate({
+      path: 'users',
+      match: { _id: { $ne: userId } }, // Exclude the current user
+      select: 'first_name email profilePhotos' // Select only needed fields
+    });
+
+    // Format the response
+    const formattedMatches = matches.map(match => ({
+      matchId: match._id,
+      matchedUser: match.users[0], // Will contain the other user's info due to the $ne operator
+      createdAt: match.createdAt,
+      status: match.status,
+      lastInteraction: match.lastInteraction
+    }));
+
+    res.status(200).json({
+      matches: formattedMatches
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Erreur lors de la récupération des matches', error });
+  }
+};
+
 module.exports = {
   updateUserProfile,
   addProfilePhoto,
@@ -204,4 +236,5 @@ module.exports = {
   getUserInfo,
   likeProfile,
   matchUsers,
+  getUserMatches,
 };
