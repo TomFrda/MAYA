@@ -118,10 +118,44 @@ const getUserInfo = async (req, res) => {
     }
   };
   
+// Contrôleur pour liker un profil
+const likeProfile = async (req, res) => {
+  try {
+    const userId = req.user.id; // ID de l'utilisateur qui like
+    const { targetUserId } = req.body; // ID de l'utilisateur qui reçoit le like
+
+    // Vérifier que l'utilisateur ne se like pas lui-même
+    if (userId === targetUserId) {
+      return res.status(400).json({ message: 'Vous ne pouvez pas vous liker vous-même' });
+    }
+
+    const user = await User.findById(userId);
+    const targetUser = await User.findById(targetUserId);
+
+    if (!targetUser) {
+      return res.status(404).json({ message: 'Utilisateur cible non trouvé' });
+    }
+
+    // Vérifier si le like existe déjà
+    if (user.likes.includes(targetUserId)) {
+      return res.status(400).json({ message: 'Vous avez déjà liké ce profil' });
+    }
+
+    // Ajouter le like
+    user.likes.push(targetUserId);
+    await user.save();
+
+    res.status(200).json({ message: 'Profil liké avec succès' });
+  } catch (error) {
+    res.status(500).json({ message: 'Erreur lors du like du profil', error });
+  }
+};
+
 module.exports = {
   updateUserProfile,
   addProfilePhoto,
   removeProfilePhoto,
   loginUser,
-  getUserInfo, // Assurez-vous que getUserInfo est exporté
+  getUserInfo,
+  likeProfile,
 };

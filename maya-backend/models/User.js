@@ -31,6 +31,10 @@ const userSchema = new mongoose.Schema({
       type: Date,
       default: null
     },
+    likes: [{
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
+    }],
     profilePhotos: {
       type: [String], // Tableau d'URLs de photos de profil
       default: []
