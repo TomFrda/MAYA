@@ -5,7 +5,13 @@ const jwt = require('jsonwebtoken');
 require('dotenv').config();
 const twilio = require('twilio');
 const redisClient = require('../config/redisClient'); // Importer le client Redis
-const { updateUserProfile, addProfilePhoto, removeProfilePhoto, loginUser, getUserInfo, likeProfile} = require('../controllers/userController'); // Importer getUserInfo
+const { updateUserProfile,
+        addProfilePhoto,
+        removeProfilePhoto,
+        loginUser,
+        getUserInfo,
+        likeProfile,
+        matchUsers,} = require('../controllers/userController'); // Importer getUserInfo
 const auth = require('../middleware/auth');
 const router = express.Router();
 
@@ -120,5 +126,8 @@ router.get('/profile', auth, getUserInfo);
 
 // Route pour liker un profil
 router.post('/like-profile', auth, likeProfile);
+
+// Add this route in userRoutes.js
+router.post('/check-match', auth, matchUsers);
 
 module.exports = router;

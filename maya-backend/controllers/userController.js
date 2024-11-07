@@ -1,6 +1,7 @@
 const User = require('../models/User');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const Match = require('../models/Match');
 
 // Contrôleur pour mettre à jour le profil utilisateur
 const updateUserProfile = async (req, res) => {
@@ -151,6 +152,50 @@ const likeProfile = async (req, res) => {
   }
 };
 
+// Add this to userController.js
+const matchUsers = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { targetUserId } = req.body;
+
+    const currentUser = await User.findById(userId);
+    const targetUser = await User.findById(targetUserId);
+
+    if (!targetUser) {
+      return res.status(404).json({ message: 'Utilisateur cible non trouvé' });
+    }
+
+    const mutualLike = currentUser.likes.includes(targetUserId) && 
+                      targetUser.likes.includes(userId);
+
+    if (mutualLike) {
+      // Sauvegarder le match dans la BD
+      const match = new Match({
+        users: [userId, targetUserId]
+      });
+      await match.save();
+
+      return res.status(200).json({ 
+        matched: true,
+        message: 'Match! Les deux utilisateurs se sont mutuellement likés',
+        matchId: match._id,
+        matchedWith: {
+          id: targetUser._id,
+          first_name: targetUser.first_name,
+          email: targetUser.email
+        }
+      });
+    }
+
+    res.status(200).json({ 
+      matched: false,
+      message: 'Pas encore de match - like non réciproque'
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Erreur lors de la vérification du match', error });
+  }
+};
+
 module.exports = {
   updateUserProfile,
   addProfilePhoto,
@@ -158,4 +203,5 @@ module.exports = {
   loginUser,
   getUserInfo,
   likeProfile,
+  matchUsers,
 };
