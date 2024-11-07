@@ -102,6 +102,7 @@ const loginUser = async (req, res) => {
   }
 };
 
+// Contrôleur pour récupérer les informations de l'utilisateur
 const getUserInfo = async (req, res) => {
     try {
       const userId = req.user.id;
