@@ -2,13 +2,16 @@ const request = require('supertest');
 const app = require('../server');
 const mongoose = require('mongoose');
 const User = require('../models/User');
+const redisClient = require('../config/redisClient');
 
 beforeAll(async () => {
-  await mongoose.connect(process.env.MONGODB_URI);
+    await mongoose.connect(process.env.MONGODB_URI);
 });
 
 afterAll(async () => {
-  await mongoose.connection.close();
+    await mongoose.connection.close();
+    await redisClient.quit();  // Fermer la connexion Redis
+    await new Promise(resolve => setTimeout(resolve, 500)); // Attendre la fermeture des connexions
 });
 
 describe('Auth Routes', () => {
