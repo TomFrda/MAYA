@@ -21,15 +21,14 @@ afterAll(async () => {
     await new Promise(resolve => setTimeout(resolve, 500)); // Attendre la fermeture des connexions
 });
 
-
 describe('Auth Routes', () => {
   test('should register a new user', async () => {
     const res = await request(app)
       .post('/api/users/signup')
       .send({
-        first_name: 'Test',
-        email: 'test@test.com',
-        phone_number: '+1234567890',
+        first_name: 'New',
+        email: 'New@test.com',
+        phone_number: '0234354628',
         password: 'password123'
       });
     expect(res.statusCode).toBe(201);
