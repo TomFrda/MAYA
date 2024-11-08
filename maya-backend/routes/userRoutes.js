@@ -1,6 +1,5 @@
 const express = require('express');
 const User = require('../models/User');
-const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 require('dotenv').config();
 const twilio = require('twilio');
@@ -13,14 +12,11 @@ const { updateUserProfile,
         likeProfile,
         matchUsers,
         getUserMatches,
+        updateLocation,
+        getNearbyUsers
       } = require('../controllers/userController'); // Importer getUserInfo
 const auth = require('../middleware/auth');
 const router = express.Router();
-
-console.log('JWT_SECRET:', process.env.JWT_SECRET);
-console.log('TWILIO_ACCOUNT_SID:', process.env.TWILIO_ACCOUNT_SID);
-console.log('TWILIO_AUTH_TOKEN:', process.env.TWILIO_AUTH_TOKEN);
-console.log('TWILIO_PHONE_NUMBER:', process.env.TWILIO_PHONE_NUMBER);
 
 const client = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
 
@@ -47,6 +43,7 @@ router.post('/signup', async (req, res) => {
 // Route de connexion
 router.post('/login', loginUser);
 
+// Route pour vérifier le numéro de téléphone
 router.post('/verify-phone', async (req, res) => {
   const { phone_number } = req.body;
   try {
@@ -78,7 +75,6 @@ router.post('/verify-phone', async (req, res) => {
 // Route pour vérifier le code de vérification
 router.post('/verify-code', async (req, res) => {
   const { phone_number, verificationCode } = req.body;
-
   try {
     const user = await User.findOne({ phone_number });
 
@@ -129,9 +125,16 @@ router.get('/profile', auth, getUserInfo);
 // Route pour liker un profil
 router.post('/like-profile', auth, likeProfile);
 
-// Add this route in userRoutes.js
+// Route pour vérifier un match
 router.post('/check-match', auth, matchUsers);
 
+// Route pour récupérer les matches de l'utilisateur
 router.get('/matches', auth, getUserMatches);
+
+// Route pour mettre à jour la localisation de l'utilisateur
+router.put('/location', auth, updateLocation);
+
+// Route pour récupérer les utilisateurs à proximité
+router.get('/nearby', auth, getNearbyUsers);
 
 module.exports = router;

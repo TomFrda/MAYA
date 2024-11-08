@@ -2,6 +2,9 @@ const User = require('../models/User');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const Match = require('../models/Match');
+const express = require('express');
+const app = express();
+app.use(express.json());
 
 // Contrôleur pour mettre à jour le profil utilisateur
 const updateUserProfile = async (req, res) => {
@@ -228,6 +231,67 @@ const getUserMatches = async (req, res) => {
   }
 };
 
+const updateLocation = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { latitude, longitude } = req.body;
+
+    if (!latitude || !longitude) {
+      return res.status(400).json({ message: 'Latitude et longitude sont requises' });
+    }
+
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      {
+        location: {
+          type: 'Point',
+          coordinates: [longitude, latitude]
+        },
+        lastLocationUpdate: new Date()
+      },
+      { new: true }
+    );
+
+    res.json({
+      message: 'Position mise à jour avec succès',
+      location: updatedUser.location
+    });
+  } catch (error) {
+    res.status(500).json({ 
+      message: 'Erreur lors de la mise à jour de la position', 
+      error: error.message 
+    });
+  }
+};
+
+const getNearbyUsers = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { maxDistance = 10000 } = req.query; // Distance en mètres, par défaut 10km
+
+    const currentUser = await User.findById(userId);
+    if (!currentUser.location) {
+      return res.status(400).json({ message: 'Position non définie pour l\'utilisateur actuel' });
+    }
+
+    const nearbyUsers = await User.find({
+      _id: { $ne: userId }, // Exclure l'utilisateur actuel
+      location: {
+        $near: {
+          $geometry: currentUser.location,
+          $maxDistance: parseInt(maxDistance)
+        }
+      }
+    }).select('first_name location lastLocationUpdate');
+
+    res.json({
+      users: nearbyUsers
+    });
+  } catch (error) {
+    res.status(500).json({ message: 'Erreur lors de la recherche des utilisateurs à proximité', error });
+  }
+};
+
 module.exports = {
   updateUserProfile,
   addProfilePhoto,
@@ -237,4 +301,6 @@ module.exports = {
   likeProfile,
   matchUsers,
   getUserMatches,
+  updateLocation,
+  getNearbyUsers
 };
