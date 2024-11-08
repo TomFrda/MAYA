@@ -1,0 +1,49 @@
+name: Node.js CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    services:
+      mongodb:
+        image: mongo
+        ports:
+          - 27017:27017
+      redis:
+        image: redis
+        ports:
+          - 6379:6379
+
+    steps:
+    - uses: actions/checkout@v2
+    
+    - name: Use Node.js
+      uses: actions/setup-node@v2
+      with:
+        node-version: '18.x'
+        cache: 'npm'
+        cache-dependency-path: './maya-backend/package.json'
+    
+    - name: Install dependencies
+      working-directory: ./maya-backend
+      run: npm ci
+    
+    - name: Create env file
+      working-directory: ./maya-backend
+      run: |
+        echo "PORT=5000" >> .env
+        echo "MONGODB_URI=mongodb://localhost:27017/test" >> .env
+        echo "JWT_SECRET=test-secret" >> .env
+        echo "TWILIO_ACCOUNT_SID=test" >> .env
+        echo "TWILIO_AUTH_TOKEN=test" >> .env
+        echo "TWILIO_PHONE_NUMBER=+1234567890" >> .env
+
+    - name: Run tests
+      working-directory: ./maya-backend
+      run: npm test

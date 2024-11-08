@@ -6,6 +6,7 @@ const http = require('http');
 const socketIo = require('socket.io');
 require('dotenv').config(); // Charger les variables d'environnement
 const redisClient = require('./config/redisClient'); // Assure la connexion à Redis
+module.exports = app;
 
 const app = express();
 const server = http.createServer(app);
