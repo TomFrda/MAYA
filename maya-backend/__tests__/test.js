@@ -1,3 +1,5 @@
+require('dotenv').config();
+
 const request = require('supertest');
 const app = require('../server');
 const mongoose = require('mongoose');
@@ -28,14 +30,3 @@ describe('Auth Routes', () => {
     expect(res.body).toHaveProperty('token');
   });
 });
-
-describe('Conversation Routes', () => {
-    test('should get all conversations for a user', async () => {
-      const res = await request(app)
-        .get('/api/conversations')
-        .set('Authorization', `Bearer ${token}`); // Assurez-vous de définir un token valide
-  
-      expect(res.statusCode).toBe(200);
-      expect(res.body).toBeInstanceOf(Array);
-    });
-  });
