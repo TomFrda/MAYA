@@ -1,5 +1,6 @@
-require('dotenv').config();
+jest.mock('twilio'); // Utiliser le mock de Twilio
 
+require('dotenv').config();
 const request = require('supertest');
 const app = require('../server');
 const mongoose = require('mongoose');
