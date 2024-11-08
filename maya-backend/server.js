@@ -18,6 +18,9 @@ const io = socketIo(server, {
 
 const PORT = process.env.PORT || 5000;
 
+const conversationRoutes = require('./routes/conversationRoutes');
+app.use('/api', conversationRoutes);
+
 // Connexion à MongoDB
 mongoose.connect(process.env.MONGODB_URI, { useNewUrlParser: true, useUnifiedTopology: true })
   .then(() => console.log('Connecté à MongoDB'))
