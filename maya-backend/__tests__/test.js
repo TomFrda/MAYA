@@ -13,9 +13,14 @@ beforeAll(async () => {
 
 afterAll(async () => {
     await mongoose.connection.close();
-    await redisClient.quit();  // Fermer la connexion Redis
+
+    if (redisClient.isOpen) { // Vérification si le client Redis est encore ouvert
+        await redisClient.quit();  // Fermer la connexion Redis
+    }
+
     await new Promise(resolve => setTimeout(resolve, 500)); // Attendre la fermeture des connexions
 });
+
 
 describe('Auth Routes', () => {
   test('should register a new user', async () => {
