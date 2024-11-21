@@ -1,3 +1,5 @@
+const request = require('supertest');
+
 jest.mock('twilio', () => {
   return jest.fn(() => ({
     messages: {
