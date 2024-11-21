@@ -1,3 +1,11 @@
+jest.mock('twilio', () => {
+  return jest.fn(() => ({
+    messages: {
+      create: jest.fn(() => Promise.resolve({ sid: 'mock-sid' }))
+    }
+  }));
+});
+
 const { app, server } = require('../server');
 const mongoose = require('mongoose');
 const redisClient = require('../config/redisClient');
