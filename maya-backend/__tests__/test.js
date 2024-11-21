@@ -1,10 +1,5 @@
-jest.mock('twilio'); // Utiliser le mock de Twilio
-
-require('dotenv').config();
-const request = require('supertest');
-const app = require('../server');
+const { app, server } = require('../server');
 const mongoose = require('mongoose');
-const User = require('../models/User');
 const redisClient = require('../config/redisClient');
 
 beforeAll(async () => {
@@ -14,11 +9,13 @@ beforeAll(async () => {
 afterAll(async () => {
     await mongoose.connection.close();
 
-    if (redisClient.isOpen) { // Vérification si le client Redis est encore ouvert
-        await redisClient.quit();  // Fermer la connexion Redis
+    if (redisClient.isOpen) {
+        await redisClient.quit();
     }
 
-    await new Promise(resolve => setTimeout(resolve, 500)); // Attendre la fermeture des connexions
+    server.close(); // Arrête le serveur Express
+
+    await new Promise(resolve => setTimeout(resolve, 500)); // Attendre la fermeture complète
 });
 
 describe('Auth Routes', () => {
