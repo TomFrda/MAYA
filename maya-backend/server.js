@@ -19,7 +19,7 @@ const io = socketIo(server, {
 const PORT = process.env.PORT || 5000;
 
 const conversationRoutes = require('./routes/conversationRoutes');
-app.use('/api', conversationRoutes);
+const userRoutes = require('./routes/userRoutes');
 
 // Connexion à MongoDB
 mongoose.connect(process.env.MONGODB_URI)
@@ -31,43 +31,16 @@ app.use(express.json()); // Pour traiter les requêtes en JSON
 app.use(cors()); // Pour autoriser les requêtes de toutes les origines
 app.use(morgan('dev')); // Logger les requêtes
 
-// Importer les routes utilisateur
-const userRoutes = require('./routes/userRoutes');
-app.use('/api/users', userRoutes); // Utiliser les routes définies dans userRoutes.js
+// Utiliser les routes définies
+app.use('/api', conversationRoutes);
+app.use('/api/users', userRoutes);
 
-// Stocker les sockets des utilisateurs connectés
-const users = {};
-
+// Gestion des sockets
 io.on('connection', (socket) => {
-  console.log('Nouvelle connexion:', socket.id);
+  console.log('Nouvelle connexion socket:', socket.id);
 
-  // Associer l'utilisateur à son socket
-  socket.on('register', (userId) => {
-    users[userId] = socket.id;
-    console.log(`Utilisateur ${userId} enregistré avec le socket ${socket.id}`);
-  });
-
-  // Écouter les messages entrants
-  socket.on('sendMessage', ({ to, message }) => {
-    const recipientSocketId = users[to];
-    if (recipientSocketId) {
-      io.to(recipientSocketId).emit('receiveMessage', message);
-      console.log(`Message envoyé à ${to}: ${message}`);
-    } else {
-      console.log(`Utilisateur ${to} non connecté`);
-    }
-  });
-
-  // Gérer la déconnexion
   socket.on('disconnect', () => {
-    console.log('Déconnexion:', socket.id);
-    for (const userId in users) {
-      if (users[userId] === socket.id) {
-        delete users[userId];
-        console.log(`Utilisateur ${userId} déconnecté`);
-        break;
-      }
-    }
+    console.log('Déconnexion socket:', socket.id);
   });
 });
 

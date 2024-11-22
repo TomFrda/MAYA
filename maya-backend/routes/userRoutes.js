@@ -2,7 +2,6 @@ const express = require('express');
 const User = require('../models/User');
 const jwt = require('jsonwebtoken');
 require('dotenv').config();
-const twilio = require('twilio');
 const redisClient = require('../config/redisClient'); // Importer le client Redis
 const { updateUserProfile,
         addProfilePhoto,
@@ -18,6 +17,11 @@ const { updateUserProfile,
 const auth = require('../middleware/auth');
 const router = express.Router();
 
+// Mock Twilio client for testing
+if (process.env.NODE_ENV === 'test') {
+  jest.mock('twilio', () => require('../__mocks__/twilio'));
+}
+const twilio = require('twilio');
 const client = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
 
 // Route d'inscription
