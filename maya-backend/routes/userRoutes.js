@@ -19,7 +19,7 @@ const router = express.Router();
 
 // Mock Twilio client for testing
 if (process.env.NODE_ENV === 'test') {
-  jest.mock('twilio', () => require('../__mocks__/twilio'));
+  jest.mock('twilio', () => require('../../__mocks__/twilio'));
 }
 const twilio = require('twilio');
 const client = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
