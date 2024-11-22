@@ -1,31 +1,22 @@
 const request = require('supertest');
-
-jest.mock('twilio', () => {
-  return jest.fn(() => ({
-    messages: {
-      create: jest.fn(() => Promise.resolve({ sid: 'mock-sid' }))
-    }
-  }));
-});
-
 const { app, server } = require('../server');
 const mongoose = require('mongoose');
 const redisClient = require('../config/redisClient');
 
 beforeAll(async () => {
-    await mongoose.connect(process.env.MONGODB_URI);
+  await mongoose.connect(process.env.MONGODB_URI);
 });
 
 afterAll(async () => {
-    await mongoose.connection.close();
+  await mongoose.connection.close();
 
-    if (redisClient.isOpen) {
-        await redisClient.quit();
-    }
+  if (redisClient.isOpen) {
+    await redisClient.quit();
+  }
 
-    server.close(); // Arrête le serveur Express
+  server.close(); // Arrête le serveur Express
 
-    await new Promise(resolve => setTimeout(resolve, 500)); // Attendre la fermeture complète
+  await new Promise(resolve => setTimeout(resolve, 500)); // Attendre la fermeture complète
 });
 
 describe('Auth Routes', () => {

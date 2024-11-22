@@ -22,7 +22,7 @@ const conversationRoutes = require('./routes/conversationRoutes');
 app.use('/api', conversationRoutes);
 
 // Connexion à MongoDB
-mongoose.connect(process.env.MONGODB_URI, { useNewUrlParser: true, useUnifiedTopology: true })
+mongoose.connect(process.env.MONGODB_URI)
   .then(() => console.log('Connecté à MongoDB'))
   .catch(err => console.error('Erreur de connexion à MongoDB', err));
 
@@ -76,4 +76,4 @@ server.listen(PORT, () => {
   console.log(`Le serveur tourne sur le port ${PORT}`);
 });
 
-module.exports = app;
+module.exports = { app, server };
