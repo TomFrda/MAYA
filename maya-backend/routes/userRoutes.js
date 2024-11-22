@@ -29,6 +29,12 @@ router.post('/signup', async (req, res) => {
   const { first_name, email, phone_number, password } = req.body;
 
   try {
+    // Vérifier si un utilisateur avec le même numéro de téléphone existe déjà
+    const existingUser = await User.findOne({ phone_number });
+    if (existingUser) {
+      return res.status(400).json({ message: 'Un utilisateur avec ce numéro de téléphone existe déjà' });
+    }
+
     // Créer un nouvel utilisateur
     const user = new User({ first_name, email, phone_number, password });
 
