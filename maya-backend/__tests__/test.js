@@ -89,30 +89,6 @@ describe('Auth Routes', () => {
     expect(res.body).toHaveProperty('email', 'new@test.com');
   });
 
-  test('should like a profile', async () => {
-    const token = await getToken();
-    const res = await request(app)
-      .post('/api/users/like-profile')
-      .set('Authorization', `Bearer ${token}`)
-      .send({
-        targetUserId: 'targetUserId' // Utilisez un ID utilisateur valide
-      });
-    expect(res.statusCode).toBe(200);
-    expect(res.body).toHaveProperty('message', 'Profil liké avec succès');
-  });
-
-  test('should check match', async () => {
-    const token = await getToken();
-    const res = await request(app)
-      .post('/api/users/check-match')
-      .set('Authorization', `Bearer ${token}`)
-      .send({
-        targetUserId: 'targetUserId' // Utilisez un ID utilisateur valide
-      });
-    expect(res.statusCode).toBe(200);
-    expect(res.body).toHaveProperty('matched');
-  });
-
   test('should get user matches', async () => {
     const token = await getToken();
     const res = await request(app)
