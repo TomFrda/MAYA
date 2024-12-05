@@ -72,3 +72,5 @@ io.on('connection', (socket) => {
 server.listen(PORT, () => {
   console.log(`Le serveur tourne sur le port ${PORT}`);
 });
+
+module.exports = { users, io };
