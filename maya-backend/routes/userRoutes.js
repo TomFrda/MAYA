@@ -8,6 +8,7 @@ const redisClient = require('../config/redisClient'); // Importer le client Redi
 const { updateUserProfile, addProfilePhoto, removeProfilePhoto, loginUser, getUserInfo } = require('../controllers/userController'); // Importer getUserInfo
 const auth = require('../middleware/auth');
 const router = express.Router();
+const { users, io } = require('../server'); // Importer users et io
 
 console.log('JWT_SECRET:', process.env.JWT_SECRET);
 console.log('TWILIO_ACCOUNT_SID:', process.env.TWILIO_ACCOUNT_SID);
