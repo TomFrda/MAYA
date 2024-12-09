@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'api_service.dart';
 import 'profile_customization_page.dart';
+import 'package:geolocator/geolocator.dart';
 
 class SignUpPage extends StatefulWidget {
   @override
@@ -13,6 +14,10 @@ class _SignUpPageState extends State<SignUpPage> {
   String _email = '';
   String _phoneNumber = '';
   String _password = '';
+
+  Future<Position> _getCurrentLocation() async {
+    return await Geolocator.getCurrentPosition(desiredAccuracy: LocationAccuracy.high);
+  }
 
   void _signUp() async {
     if (_formKey.currentState!.validate()) {
@@ -104,4 +109,4 @@ class _SignUpPageState extends State<SignUpPage> {
       ),
     );
   }
-} 
+}

@@ -15,3 +15,23 @@ code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
     monospace;
 }
+
+.btn {
+  @apply inline-block px-6 py-2.5 bg-blue-600 text-white font-medium text-xs leading-tight uppercase rounded shadow-md hover:bg-blue-700 hover:shadow-lg focus:bg-blue-700 focus:shadow-lg focus:outline-none focus:ring-0 active:bg-blue-800 active:shadow-lg transition duration-150 ease-in-out;
+}
+
+.btn-primary {
+  @apply bg-blue-600;
+}
+
+.btn-secondary {
+  @apply bg-gray-600;
+}
+
+header {
+  @apply bg-blue-600 text-white p-4;
+}
+
+footer {
+  @apply bg-gray-800 text-white p-4 mt-8;
+}

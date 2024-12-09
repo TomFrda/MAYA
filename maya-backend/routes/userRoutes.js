@@ -119,4 +119,38 @@ router.delete('/profile/photo', auth, removeProfilePhoto);
 // Route pour récupérer les informations de l'utilisateur
 router.get('/profile', auth, getUserInfo);
 
+// Route pour mettre à jour la localisation de l'utilisateur
+router.post('/updateLocation', auth, async (req, res) => {
+  const { latitude, longitude } = req.body;
+  try {
+    const user = await User.findById(req.user.id);
+    user.location.coordinates = [longitude, latitude];
+    await user.save();
+    res.status(200).json({ message: 'Location updated successfully' });
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to update location', error });
+  }
+});
+
+// Route pour récupérer les utilisateurs à proximité
+router.get('/nearbyUsers', auth, async (req, res) => {
+  const { latitude, longitude, maxDistance } = req.query;
+  try {
+    const users = await User.find({
+      location: {
+        $near: {
+          $geometry: {
+            type: 'Point',
+            coordinates: [longitude, latitude]
+          },
+          $maxDistance: maxDistance
+        }
+      }
+    });
+    res.status(200).json(users);
+  } catch (error) {
+    res.status(500).json({ message: 'Failed to fetch nearby users', error });
+  }
+});
+
 module.exports = router;

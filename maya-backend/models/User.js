@@ -34,6 +34,17 @@ const userSchema = new mongoose.Schema({
     profilePhotos: {
       type: [String], // Tableau d'URLs de photos de profil
       default: []
+    },
+    location: {
+      type: {
+        type: String,
+        enum: ['Point'],
+        default: 'Point'
+      },
+      coordinates: {
+        type: [Number],
+        index: '2dsphere'
+      }
     }
 });
 
