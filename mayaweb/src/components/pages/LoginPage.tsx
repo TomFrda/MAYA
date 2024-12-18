@@ -6,6 +6,8 @@ import { login } from '../../services/apiService';
 const LoginPage: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [latitude, setLatitude] = useState<number | null>(null);
+  const [longitude, setLongitude] = useState<number | null>(null);
   const [error, setError] = useState('');
   const { login: authLogin } = useContext(AuthContext);
   const history = useHistory();
@@ -13,9 +15,18 @@ const LoginPage: React.FC = () => {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const response = await login(email, password);
-      authLogin(response.token, response.user);
-      history.push('/swipe'); // Redirection vers la page de swipe après connexion
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(async (position) => {
+          setLatitude(position.coords.latitude);
+          setLongitude(position.coords.longitude);
+
+          const response = await login(email, password, position.coords.latitude, position.coords.longitude);
+          authLogin(response.token, response.user);
+          history.push('/swipe'); // Redirection vers la page de swipe après connexion
+        });
+      } else {
+        setError('La géolocalisation n\'est pas supportée par ce navigateur.');
+      }
     } catch (err) {
       setError('Email ou mot de passe incorrect');
       console.error(err);

@@ -81,7 +81,7 @@ const removeProfilePhoto = async (req, res) => {
 
 // Contrôleur pour la connexion des utilisateurs
 const loginUser = async (req, res) => {
-  const { email, password } = req.body;
+  const { email, password, latitude, longitude } = req.body;
 
   try {
     const user = await User.findOne({ email });
@@ -93,6 +93,14 @@ const loginUser = async (req, res) => {
     if (!isMatch) {
       return res.status(400).json({ message: 'Mot de passe incorrect' });
     }
+
+    // Mettre à jour la localisation de l'utilisateur
+    user.location = {
+      type: 'Point',
+      coordinates: [longitude, latitude],
+      lastUpdated: new Date()
+    };
+    await user.save();
 
     const token = jwt.sign({ id: user._id, email: user.email }, process.env.JWT_SECRET, { expiresIn: '1h' });
 

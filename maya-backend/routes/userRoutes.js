@@ -22,16 +22,9 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage: storage });
 
-console.log('JWT_SECRET:', process.env.JWT_SECRET);
-console.log('TWILIO_ACCOUNT_SID:', process.env.TWILIO_ACCOUNT_SID);
-console.log('TWILIO_AUTH_TOKEN:', process.env.TWILIO_AUTH_TOKEN);
-console.log('TWILIO_PHONE_NUMBER:', process.env.TWILIO_PHONE_NUMBER);
-
-const client = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
-
 // Route d'inscription
 router.post('/signup', upload.single('photo'), async (req, res) => {
-  const { first_name, email, phone_number, password, gender, interested_in } = req.body;
+  const { first_name, email, phone_number, password, gender, interested_in, latitude, longitude } = req.body;
   const photoFile = req.file;
 
   if (!photoFile) {
@@ -39,14 +32,20 @@ router.post('/signup', upload.single('photo'), async (req, res) => {
   }
 
   try {
+    const hashedPassword = await bcrypt.hash(password, 10);
     const user = new User({ 
       first_name, 
       email, 
       phone_number, 
-      password,
+      password: hashedPassword,
       gender,
       interested_in,
-      profilePhotos: [photoFile.filename] // Stocker le nom de fichier de la photo
+      profilePhotos: [photoFile.filename], // Stocker le nom de fichier de la photo
+      location: {
+        type: 'Point',
+        coordinates: [longitude, latitude],
+        lastUpdated: new Date()
+      }
     });
     await user.save();
 
@@ -154,19 +153,33 @@ router.get('/profile', auth, getUserInfo);
 // Route pour mettre à jour la localisation de l'utilisateur
 router.post('/updateLocation', auth, async (req, res) => {
   const { latitude, longitude } = req.body;
+
+  // Valider les coordonnées
+  if (!latitude || !longitude || 
+      latitude < -90 || latitude > 90 || 
+      longitude < -180 || longitude > 180) {
+    return res.status(400).json({ 
+      message: 'Invalid coordinates. Latitude must be between -90 and 90, longitude between -180 and 180' 
+    });
+  }
+
   try {
     const user = await User.findById(req.user.id);
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
     
+    // Stocker en format GeoJSON [longitude, latitude]
     user.location = {
       type: 'Point',
-      coordinates: [longitude, latitude], // MongoDB utilise [longitude, latitude]
+      coordinates: [parseFloat(longitude), parseFloat(latitude)], // Assurer que ce sont des nombres
       lastUpdated: new Date()
     };
     
     await user.save();
+    
+    // Stocker dans Redis pour un accès plus rapide
+    await redisClient.set(`user:${user._id}:location`, JSON.stringify(user.location));
     
     res.status(200).json({ 
       message: 'Location updated successfully', 
@@ -202,12 +215,23 @@ router.get('/nearbyUsers', auth, async (req, res) => {
 router.get('/nearby-profiles', auth, async (req, res) => {
   try {
     const user = await User.findById(req.user.id);
+    const maxDistance = user.maxDistance * 1000; // Convertir en mètres
+
     const profiles = await User.find({
       _id: { $ne: user._id },
       gender: user.interested_in,
-      interested_in: user.gender
+      interested_in: user.gender,
+      location: {
+        $near: {
+          $geometry: {
+            type: 'Point',
+            coordinates: user.location.coordinates
+          },
+          $maxDistance: maxDistance
+        }
+      }
     }).select('first_name age profilePhotos bio location gender interested_in');
-    
+
     const formattedProfiles = profiles.map(profile => ({
       id: profile._id,
       name: profile.first_name,
@@ -216,16 +240,14 @@ router.get('/nearby-profiles', auth, async (req, res) => {
         ? `http://localhost:5000/uploads/${profile.profilePhotos[0]}` 
         : '',
       bio: profile.bio || '',
-      distance: '',
+      distance: '', // Vous pouvez calculer la distance ici si nécessaire
       gender: profile.gender,
       interested_in: profile.interested_in
     }));
-    
-    console.log('Formatted profiles:', formattedProfiles); // Pour debug
+
     res.status(200).json(formattedProfiles);
   } catch (error) {
-    console.error('Error:', error);
-    res.status(500).json({ message: 'Error fetching profiles' });
+    res.status(500).json({ message: 'Failed to fetch nearby profiles', error });
   }
 });
 

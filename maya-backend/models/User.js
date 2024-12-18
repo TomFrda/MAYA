@@ -59,6 +59,10 @@ const userSchema = new mongoose.Schema({
       type: String,
       enum: ['homme', 'femme'],
       required: [true, 'La préférence de genre est obligatoire']
+    },
+    maxDistance: {
+      type: Number,
+      default: 50 // Par défaut, 50 km
     }
 });
 

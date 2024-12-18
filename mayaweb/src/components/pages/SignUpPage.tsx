@@ -1,8 +1,8 @@
 import React, { useState, useContext } from 'react';
 import { Link, useHistory } from 'react-router-dom';
-import { AuthContext } from '../../context/AuthContext';
 import { signup } from '../../services/apiService';
 import { SignupResponse } from '../../types/api';
+import { AuthContext } from '../../context/AuthContext';
 
 const SignUpPage: React.FC = () => {
   const [firstName, setFirstName] = useState('');
@@ -12,6 +12,8 @@ const SignUpPage: React.FC = () => {
   const [gender, setGender] = useState('');
   const [interestedIn, setInterestedIn] = useState('');
   const [profilePhoto, setProfilePhoto] = useState<File | null>(null);
+  const [latitude, setLatitude] = useState<number | null>(null);
+  const [longitude, setLongitude] = useState<number | null>(null);
   const [error, setError] = useState('');
   const { login } = useContext(AuthContext);
   const history = useHistory();
@@ -29,9 +31,18 @@ const SignUpPage: React.FC = () => {
       return;
     }
     try {
-      const response: SignupResponse = await signup(firstName, email, phoneNumber, password, gender, interestedIn, profilePhoto);
-      login(response.token, response.user); // This should set the token in your AuthContext
-      history.push('/swipe');
+      if (navigator.geolocation) {
+        navigator.geolocation.getCurrentPosition(async (position) => {
+          setLatitude(position.coords.latitude);
+          setLongitude(position.coords.longitude);
+
+          const response: SignupResponse = await signup(firstName, email, phoneNumber, password, gender, interestedIn, profilePhoto, position.coords.latitude, position.coords.longitude);
+          login(response.token, response.user); // This should set the token in your AuthContext
+          history.push('/swipe');
+        });
+      } else {
+        setError('La géolocalisation n\'est pas supportée par ce navigateur.');
+      }
     } catch (err) {
       setError('Erreur lors de l\'inscription');
       console.error(err);

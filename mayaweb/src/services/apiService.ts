@@ -6,10 +6,12 @@ axios.defaults.headers.common['Authorization'] = `Bearer ${localStorage.getItem(
 const API_URL = 'http://localhost:5000/api/users';
 
 // Login function
-export const login = async (email: string, password: string): Promise<LoginResponse> => {
+export const login = async (email: string, password: string, latitude?: number, longitude?: number): Promise<LoginResponse> => {
   const response = await axios.post<LoginResponse>(`${API_URL}/login`, {
     email,
     password,
+    latitude,
+    longitude,
   });
   return response.data;
 };
@@ -22,7 +24,9 @@ export const signup = async (
   password: string,
   gender: string,
   interestedIn: string,
-  profilePhoto: File
+  profilePhoto: File,
+  latitude: number,
+  longitude: number
 ): Promise<SignupResponse> => {
   const formData = new FormData();
   formData.append('first_name', firstName);
@@ -32,6 +36,8 @@ export const signup = async (
   formData.append('gender', gender);
   formData.append('interested_in', interestedIn);
   formData.append('photo', profilePhoto);
+  formData.append('latitude', latitude.toString());
+  formData.append('longitude', longitude.toString());
 
   const response = await axios.post<SignupResponse>(`${API_URL}/signup`, formData, {
     headers: {
@@ -58,40 +64,58 @@ export const getUserInfo = async (token: string) => {
 
 // Fonction pour mettre à jour la localisation de l'utilisateur
 export const updateLocation = async (token: string, latitude: number, longitude: number) => {
-  const response = await axios.post(`${API_URL}/updateLocation`, 
-    { latitude, longitude },
-    { headers: { Authorization: `Bearer ${token}` } }
-  );
-  return response.data;
-};
-
-// Fonction pour récupérer les utilisateurs à proximité
-export const getNearbyUsers = async (token: string, latitude: number, longitude: number, maxDistance: number) => {
-  const response = await axios.get(`${API_URL}/nearbyUsers`, {
+  const response = await axios.post(`${API_URL}/updateLocation`, {
+    latitude,
+    longitude,
+  }, {
     headers: {
       Authorization: `Bearer ${token}`,
-    },
-    params: {
-      latitude,
-      longitude,
-      maxDistance,
     },
   });
   return response.data;
 };
 
-// Ajouter une fonction pour récupérer les profils filtrés par genre
+// Fonction pour mettre à jour le profil de l'utilisateur
+export const updateUserProfile = async (token: string, data: { bio: string, maxDistance: number, location: { type: string, coordinates: [number, number] } }) => {
+  const response = await axios.put(`${API_URL}/profile`, data, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+  return response.data;
+};
+
+// Fonction pour télécharger la photo de profil de l'utilisateur
+export const uploadProfilePhoto = async (token: string, photo: File) => {
+  const formData = new FormData();
+  formData.append('photo', photo);
+
+  const response = await axios.post(`${API_URL}/uploadProfilePhoto`, formData, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'multipart/form-data',
+    },
+  });
+  return response.data;
+};
+
+// Fonction pour récupérer les profils à proximité
 export const getNearbyProfiles = async (token: string): Promise<Profile[]> => {
-  try {
-    const response = await axios.get<Profile[]>(`${API_URL}/nearby-profiles`, {
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
-    });
-    console.log('Profiles received:', response.data); // Pour debug
-    return response.data;
-  } catch (error) {
-    console.error('Error fetching profiles:', error);
-    throw error;
-  }
+  const response = await axios.get<Profile[]>(`${API_URL}/nearby-profiles`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+  return response.data;
+};
+
+// Fonction pour récupérer les utilisateurs à proximité
+export const getNearbyUsers = async (token: string, latitude: number, longitude: number, maxDistance: number): Promise<Profile[]> => {
+  const response = await axios.get<Profile[]>(`${API_URL}/nearbyUsers`, {
+    params: { latitude, longitude, maxDistance },
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+  return response.data;
 };

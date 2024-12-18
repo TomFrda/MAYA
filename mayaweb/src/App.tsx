@@ -4,6 +4,7 @@ import HomePage from './components/pages/HomePage';
 import LoginPage from './components/pages/LoginPage';
 import SignUpPage from './components/pages/SignUpPage';
 import SwipePage from './components/pages/SwipePage';
+import ProfilePage from './components/pages/ProfilePage';
 import Header from './components/layout/Header';
 import Footer from './components/layout/Footer';
 import { AuthProvider } from './context/AuthContext';
@@ -25,6 +26,7 @@ const App: React.FC = () => {
               
               {/* Route privée - redirection vers /login si non connecté */}
               <PrivateRoute path="/swipe" component={SwipePage} />
+              <PrivateRoute path="/profile" component={ProfilePage} />
               
               {/* Redirection par défaut vers la page d'accueil */}
               <Redirect to="/" />
