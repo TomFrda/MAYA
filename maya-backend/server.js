@@ -8,6 +8,8 @@ const path = require('path');
 const fs = require('fs');
 require('dotenv').config(); // Charger les variables d'environnement
 const redisClient = require('./config/redisClient'); // Assure la connexion à Redis
+const User = require('./models/User');
+const auth = require('./middleware/auth');
 
 const app = express();
 const server = http.createServer(app);
@@ -63,6 +65,48 @@ io.on('connection', (socket) => {
       console.log(`Message envoyé à ${to}: ${message}`);
     } else {
       console.log(`Utilisateur ${to} non connecté`);
+    }
+  });
+
+  // Gérer les événements de swipe
+  socket.on('swipe', async ({ userId, swipedUserId, direction }) => {
+    try {
+      const user = await User.findById(userId);
+      const swipedUser = await User.findById(swipedUserId);
+
+      if (!user || !swipedUser) {
+        return socket.emit('swipeError', { message: 'Utilisateur non trouvé' });
+      }
+
+      if (direction === 'right') {
+        // Ajouter l'utilisateur swipé à la liste des profils likés
+        if (!user.likedProfiles.includes(swipedUserId)) {
+          user.likedProfiles.push(swipedUserId);
+          await user.save();
+        }
+
+        // Vérifier si l'utilisateur swipé a également liké l'utilisateur actuel
+        if (swipedUser.likedProfiles.includes(userId)) {
+          // Ajouter les deux utilisateurs à la liste des matchs
+          if (!user.matches.includes(swipedUserId)) {
+            user.matches.push(swipedUserId);
+            await user.save();
+          }
+          if (!swipedUser.matches.includes(userId)) {
+            swipedUser.matches.push(userId);
+            await swipedUser.save();
+          }
+
+          // Notifier les deux utilisateurs du match
+          io.to(users[userId]).emit('match', { match: swipedUser });
+          io.to(users[swipedUserId]).emit('match', { match: user });
+        }
+      }
+
+      socket.emit('swipeSuccess', { message: 'Swipe enregistré avec succès' });
+    } catch (error) {
+      console.error('Error handling swipe:', error);
+      socket.emit('swipeError', { message: 'Erreur lors du traitement du swipe', error });
     }
   });
 

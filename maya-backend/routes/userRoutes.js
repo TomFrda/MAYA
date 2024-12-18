@@ -216,13 +216,6 @@ router.get('/nearbyUsers', auth, async (req, res) => {
 router.get('/nearby-profiles', auth, async (req, res) => {
   try {
     const user = await User.findById(req.user.id);
-    console.log('Current user:', {
-      id: user._id,
-      gender: user.gender,
-      interested_in: user.interested_in,
-      location: user.location
-    });
-
     const maxDistance = user.maxDistance * 1000;
 
     const profiles = await User.find({
@@ -237,15 +230,9 @@ router.get('/nearby-profiles', auth, async (req, res) => {
           },
           $maxDistance: maxDistance
         }
-      }
+      },
+      _id: { $nin: user.likedProfiles } // Exclure les profils déjà likés
     }).select('first_name age profilePhotos bio location gender interested_in');
-
-    console.log('Found profiles:', profiles.map(p => ({
-      id: p._id,
-      gender: p.gender,
-      interested_in: p.interested_in,
-      location: p.location
-    })));
 
     const formattedProfiles = profiles.map(profile => ({
       id: profile._id,
@@ -264,6 +251,47 @@ router.get('/nearby-profiles', auth, async (req, res) => {
   } catch (error) {
     console.error('Error fetching nearby profiles:', error.stack);
     res.status(500).json({ message: 'Failed to fetch nearby profiles', error });
+  }
+});
+
+// Route pour liker un profil
+router.post('/like', auth, async (req, res) => {
+  const { likedUserId } = req.body;
+  const userId = req.user.id;
+
+  try {
+    const user = await User.findById(userId);
+    const likedUser = await User.findById(likedUserId);
+
+    if (!user || !likedUser) {
+      return res.status(404).json({ message: 'Utilisateur non trouvé' });
+    }
+
+    // Ajouter l'utilisateur liké à la liste des profils likés
+    if (!user.likedProfiles.includes(likedUserId)) {
+      user.likedProfiles.push(likedUserId);
+      await user.save();
+    }
+
+    // Vérifier si l'utilisateur liké a également liké l'utilisateur actuel
+    if (likedUser.likedProfiles.includes(userId)) {
+      // Ajouter les deux utilisateurs à la liste des matchs
+      if (!user.matches.includes(likedUserId)) {
+        user.matches.push(likedUserId);
+        await user.save();
+      }
+      if (!likedUser.matches.includes(userId)) {
+        likedUser.matches.push(userId);
+        await likedUser.save();
+      }
+
+      return res.status(200).json({ message: 'Match trouvé!', match: true });
+    }
+
+    res.status(200).json({ message: 'Profil liké avec succès', match: false });
+  } catch (error) {
+    console.error('Error liking profile:', error);
+    res.status(500).json({ message: 'Erreur lors du like du profil', error });
   }
 });
 

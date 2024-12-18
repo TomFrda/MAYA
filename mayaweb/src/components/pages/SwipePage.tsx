@@ -2,7 +2,7 @@ import React, { useState, useEffect, useContext } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { HeartIcon, XMarkIcon, UserIcon } from '@heroicons/react/24/solid';
 import { useSwipeable } from 'react-swipeable';
-import { getNearbyProfiles } from '../../services/apiService';
+import { getNearbyProfiles, likeProfile } from '../../services/apiService';
 import { AuthContext } from '../../context/AuthContext';
 
 // Définir l'interface pour un profil
@@ -40,20 +40,33 @@ const SwipePage: React.FC = () => {
     fetchProfiles();
   }, [token]);
 
-  const handlers = useSwipeable({
-    onSwipedLeft: () => handleSwipe('left'),
-    onSwipedRight: () => handleSwipe('right'),
-    preventScrollOnSwipe: true,
-    trackMouse: true
-  });
+  const handleSwipe = async (direction: string) => {
+    if (direction === 'right') {
+      try {
+        const likedProfile = profiles[currentIndex];
+        if (token) {
+          await likeProfile(token, likedProfile.id);
+        } else {
+          console.error('Token is null');
+        }
+      } catch (error) {
+        console.error('Error liking profile:', error);
+      }
+    }
 
-  const handleSwipe = (direction: string) => {
     setDirection(direction);
     setTimeout(() => {
       setCurrentIndex((prevIndex) => prevIndex + 1);
       setDirection(null);
     }, 200);
   };
+
+  const handlers = useSwipeable({
+    onSwipedLeft: () => handleSwipe('left'),
+    onSwipedRight: () => handleSwipe('right'),
+    preventScrollOnSwipe: true,
+    trackMouse: true
+  });
 
   const handleImageError = (e: React.SyntheticEvent<HTMLImageElement, Event>) => {
     const img = e.target as HTMLImageElement;

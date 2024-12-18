@@ -67,6 +67,37 @@ export const getUserInfo = async (token: string) => {
   return response.data;
 };
 
+// Fonction pour liker un profil
+export const likeProfile = async (token: string, likedUserId: string) => {
+  const response = await axios.post(`${API_URL}/like`, { likedUserId }, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+  return response.data;
+};
+
+// Fonction pour récupérer les profils à proximité
+export const getNearbyProfiles = async (token: string): Promise<Profile[]> => {
+  const response = await axios.get<Profile[]>(`${API_URL}/nearby-profiles`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+  return response.data;
+};
+
+// Fonction pour récupérer les utilisateurs à proximité
+export const getNearbyUsers = async (token: string, latitude: number, longitude: number, maxDistance: number): Promise<Profile[]> => {
+  const response = await axios.get<Profile[]>(`${API_URL}/nearbyUsers`, {
+    params: { latitude, longitude, maxDistance },
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+  return response.data;
+};
+
 // Fonction pour mettre à jour la localisation de l'utilisateur
 export const updateLocation = async (token: string, latitude: number, longitude: number) => {
   const response = await axios.post(`${API_URL}/updateLocation`, {
@@ -99,27 +130,6 @@ export const uploadProfilePhoto = async (token: string, photo: File) => {
     headers: {
       Authorization: `Bearer ${token}`,
       'Content-Type': 'multipart/form-data',
-    },
-  });
-  return response.data;
-};
-
-// Fonction pour récupérer les profils à proximité
-export const getNearbyProfiles = async (token: string): Promise<Profile[]> => {
-  const response = await axios.get<Profile[]>(`${API_URL}/nearby-profiles`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
-  return response.data;
-};
-
-// Fonction pour récupérer les utilisateurs à proximité
-export const getNearbyUsers = async (token: string, latitude: number, longitude: number, maxDistance: number): Promise<Profile[]> => {
-  const response = await axios.get<Profile[]>(`${API_URL}/nearbyUsers`, {
-    params: { latitude, longitude, maxDistance },
-    headers: {
-      Authorization: `Bearer ${token}`,
     },
   });
   return response.data;
