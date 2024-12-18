@@ -213,7 +213,7 @@ router.get('/nearby-profiles', auth, async (req, res) => {
       name: profile.first_name,
       age: profile.age || '',
       photo: profile.profilePhotos && profile.profilePhotos.length > 0 
-        ? `http://localhost:5000/${profile.profilePhotos[0]}` 
+        ? `http://localhost:5000/uploads/${profile.profilePhotos[0]}` 
         : '',
       bio: profile.bio || '',
       distance: '',
