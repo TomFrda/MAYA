@@ -9,6 +9,8 @@ const { updateUserProfile, addProfilePhoto, removeProfilePhoto, loginUser, getUs
 const auth = require('../middleware/auth');
 const router = express.Router();
 const { users, io } = require('../server'); // Importer users et io
+const multer = require('multer');
+const upload = multer({ dest: 'uploads/' });
 
 console.log('JWT_SECRET:', process.env.JWT_SECRET);
 console.log('TWILIO_ACCOUNT_SID:', process.env.TWILIO_ACCOUNT_SID);
@@ -18,20 +20,40 @@ console.log('TWILIO_PHONE_NUMBER:', process.env.TWILIO_PHONE_NUMBER);
 const client = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
 
 // Route d'inscription
-router.post('/signup', async (req, res) => {
-  const { first_name, email, phone_number, password } = req.body;
+router.post('/signup', upload.single('photo'), async (req, res) => {
+  const { first_name, email, phone_number, password, gender, interested_in } = req.body;
+  const photoFile = req.file;
+
+  if (!photoFile) {
+    return res.status(400).json({ message: 'La photo de profil est obligatoire' });
+  }
 
   try {
-    // Créer un nouvel utilisateur
-    const user = new User({ first_name, email, phone_number, password });
-
-    // Sauvegarder l'utilisateur dans la base de données
+    const user = new User({ 
+      first_name, 
+      email, 
+      phone_number, 
+      password,
+      gender,
+      interested_in,
+      profilePhotos: [photoFile.path] // Stocker le chemin de la photo
+    });
     await user.save();
 
-    // Générer un token JWT
-    const token = jwt.sign({ id: user._id, email: user.email }, process.env.JWT_SECRET, { expiresIn: '1h' });
+    const token = jwt.sign(
+      { id: user._id, email: user.email }, 
+      process.env.JWT_SECRET, 
+      { expiresIn: '1h' }
+    );
 
-    res.status(201).json({ message: 'Utilisateur créé avec succès', token, user });
+    res.status(201).json({ 
+      message: 'Utilisateur créé avec succès', 
+      token, 
+      user: {
+        ...user.toJSON(),
+        password: undefined
+      }
+    });
   } catch (error) {
     res.status(500).json({ message: 'Erreur lors de la création de l\'utilisateur', error });
   }
@@ -124,10 +146,24 @@ router.post('/updateLocation', auth, async (req, res) => {
   const { latitude, longitude } = req.body;
   try {
     const user = await User.findById(req.user.id);
-    user.location.coordinates = [longitude, latitude];
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    
+    user.location = {
+      type: 'Point',
+      coordinates: [longitude, latitude], // MongoDB utilise [longitude, latitude]
+      lastUpdated: new Date()
+    };
+    
     await user.save();
-    res.status(200).json({ message: 'Location updated successfully' });
+    
+    res.status(200).json({ 
+      message: 'Location updated successfully', 
+      location: user.location 
+    });
   } catch (error) {
+    console.error('Error updating location:', error);
     res.status(500).json({ message: 'Failed to update location', error });
   }
 });
@@ -150,6 +186,35 @@ router.get('/nearbyUsers', auth, async (req, res) => {
     res.status(200).json(users);
   } catch (error) {
     res.status(500).json({ message: 'Failed to fetch nearby users', error });
+  }
+});
+
+router.get('/nearby-profiles', auth, async (req, res) => {
+  try {
+    console.log('User ID from token:', req.user.id);
+    const user = await User.findById(req.user.id);
+    
+    if (!user) {
+      console.log('User not found with ID:', req.user.id);
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    console.log('Finding profiles for:', {
+      userGender: user.gender,
+      interestedIn: user.interested_in
+    });
+
+    const profiles = await User.find({
+      _id: { $ne: user._id },
+      gender: user.interested_in,
+      interested_in: user.gender
+    }).select('-password -verificationCode -verificationCodeExpires');
+
+    console.log('Found profiles:', profiles.length);
+    res.status(200).json(profiles);
+  } catch (error) {
+    console.error('Error fetching profiles:', error);
+    res.status(500).json({ message: 'Error fetching profiles' });
   }
 });
 

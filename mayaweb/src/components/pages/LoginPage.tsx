@@ -1,60 +1,78 @@
 import React, { useState, useContext } from 'react';
-import { login } from '../services/apiService';
-import { AuthContext } from '../context/AuthContext';
+import { Link, useHistory } from 'react-router-dom';
+import { AuthContext } from '../../context/AuthContext';
+import { login } from '../../services/apiService';
 
 const LoginPage: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const authContext = useContext(AuthContext);
+  const [error, setError] = useState('');
+  const { login: authLogin } = useContext(AuthContext);
+  const history = useHistory();
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const data = await login(email, password);
-      console.log('Login successful:', data);
-      authContext?.login(data.token);
-    } catch (error) {
-      console.error('Login failed:', error);
+      const response = await login(email, password);
+      authLogin(response.token, response.user);
+      history.push('/swipe'); // Redirection vers la page de swipe après connexion
+    } catch (err) {
+      setError('Email ou mot de passe incorrect');
+      console.error(err);
     }
   };
 
   return (
-    <div className="flex flex-col items-center justify-center h-screen">
-      <h1 className="text-4xl font-bold mb-8">Login</h1>
-      <form onSubmit={handleSubmit} className="w-full max-w-sm">
-        <div className="mb-4">
-          <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="email">
-            Email
-          </label>
-          <input
-            type="email"
-            id="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-          />
+    <div className="min-h-screen bg-gradient-to-r from-pink-500 via-red-500 to-purple-500">
+      <div className="flex items-center justify-center min-h-screen px-4">
+        <div className="w-full max-w-md p-8 bg-white rounded-lg shadow-xl">
+          <div className="text-center">
+            <h2 className="mb-6 text-3xl font-bold text-gray-900">Bienvenue</h2>
+            <p className="mb-8 text-gray-600">Heureux de vous revoir !</p>
+          </div>
+          <form onSubmit={handleLogin}>
+            <div className="space-y-4">
+              <div>
+                <label className="block mb-2 text-sm font-medium text-gray-700">Email</label>
+                <input
+                  type="email"
+                  placeholder="votre@email.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-pink-500 focus:border-pink-500"
+                  required
+                />
+              </div>
+              <div>
+                <label className="block mb-2 text-sm font-medium text-gray-700">Mot de passe</label>
+                <input
+                  type="password"
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-pink-500 focus:border-pink-500"
+                  required
+                />
+              </div>
+              {error && <p className="text-red-500">{error}</p>}
+              <button 
+                type="submit"
+                className="w-full py-3 text-white transition-all bg-gradient-to-r from-pink-500 to-purple-500 rounded-lg hover:opacity-90"
+              >
+                Se connecter
+              </button>
+            </div>
+          </form>
+          <div className="mt-6 text-center">
+            <p className="text-gray-600">
+              Pas encore de compte ?{' '}
+              <Link to="/signup" className="font-medium text-pink-500 hover:text-pink-600">
+                S'inscrire
+              </Link>
+            </p>
+          </div>
         </div>
-        <div className="mb-6">
-          <label className="block text-gray-700 text-sm font-bold mb-2" htmlFor="password">
-            Password
-          </label>
-          <input
-            type="password"
-            id="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 mb-3 leading-tight focus:outline-none focus:shadow-outline"
-          />
-        </div>
-        <div className="flex items-center justify-between">
-          <button
-            type="submit"
-            className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
-          >
-            Login
-          </button>
-        </div>
-      </form>
+      </div>
     </div>
   );
 };

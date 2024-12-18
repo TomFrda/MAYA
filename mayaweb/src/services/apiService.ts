@@ -1,87 +1,41 @@
 import axios from 'axios';
+import { LoginResponse, SignupResponse } from '../types/api';
+
+axios.defaults.headers.common['Authorization'] = `Bearer ${localStorage.getItem('token')}`;
 
 const API_URL = 'http://localhost:5000/api/users'; // Remplacez par l'URL de votre backend
 
-// Fonction pour s'inscrire
-export const signup = async (firstName: string, email: string, phoneNumber: string, password: string) => {
-  const response = await axios.post(`${API_URL}/signup`, {
-    first_name: firstName,
-    email,
-    phone_number: phoneNumber,
-    password,
-  });
-  return response.data;
-};
-
 // Fonction pour se connecter
-export const login = async (email: string, password: string) => {
-  const response = await axios.post(`${API_URL}/login`, {
+export const login = async (email: string, password: string): Promise<LoginResponse> => {
+  const response = await axios.post<LoginResponse>(`${API_URL}/login`, {
     email,
     password,
   });
   return response.data;
 };
 
-// Fonction pour vérifier le téléphone
-export const verifyPhone = async (phoneNumber: string) => {
-  const response = await axios.post(`${API_URL}/verify-phone`, {
-    phone_number: phoneNumber,
-  });
-  return response.data;
-};
+// Fonction pour s'inscrire
+export const signup = async (
+  firstName: string, 
+  email: string, 
+  phoneNumber: string, 
+  password: string, 
+  gender: string,
+  interestedIn: string,
+  profilePhoto: File
+): Promise<SignupResponse> => {
+  const formData = new FormData();
+  formData.append('first_name', firstName);
+  formData.append('email', email);
+  formData.append('phone_number', phoneNumber);
+  formData.append('password', password);
+  formData.append('gender', gender);
+  formData.append('interested_in', interestedIn);
+  formData.append('photo', profilePhoto);
 
-// Fonction pour vérifier le code de vérification
-export const verifyCode = async (phoneNumber: string, verificationCode: string) => {
-  const response = await axios.post(`${API_URL}/verify-code`, {
-    phone_number: phoneNumber,
-    verificationCode,
-  });
-  return response.data;
-};
-
-// Fonction pour envoyer un message
-export const sendMessage = async (token: string, to: string, message: string) => {
-  const response = await axios.post(`${API_URL}/send-message`, {
-    to,
-    message,
-  }, {
+  const response = await axios.post<SignupResponse>(`${API_URL}/signup`, formData, {
     headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
-  return response.data;
-};
-
-// Fonction pour mettre à jour le profil utilisateur
-export const updateProfile = async (token: string, updatedData: any) => {
-  const response = await axios.put(`${API_URL}/profile`, updatedData, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
-  return response.data;
-};
-
-// Fonction pour ajouter une photo de profil
-export const addProfilePhoto = async (token: string, photoUrl: string) => {
-  const response = await axios.post(`${API_URL}/profile/photo`, {
-    photoUrl,
-  }, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
-  return response.data;
-};
-
-// Fonction pour supprimer une photo de profil
-export const removeProfilePhoto = async (token: string, photoUrl: string) => {
-  const response = await axios.delete(`${API_URL}/profile/photo`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-    data: {
-      photoUrl,
+      'Content-Type': 'multipart/form-data',
     },
   });
   return response.data;
@@ -99,14 +53,10 @@ export const getUserInfo = async (token: string) => {
 
 // Fonction pour mettre à jour la localisation de l'utilisateur
 export const updateLocation = async (token: string, latitude: number, longitude: number) => {
-  const response = await axios.post(`${API_URL}/updateLocation`, {
-    latitude,
-    longitude,
-  }, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  });
+  const response = await axios.post(`${API_URL}/updateLocation`, 
+    { latitude, longitude },
+    { headers: { Authorization: `Bearer ${token}` } }
+  );
   return response.data;
 };
 
@@ -121,6 +71,16 @@ export const getNearbyUsers = async (token: string, latitude: number, longitude:
       longitude,
       maxDistance,
     },
+  });
+  return response.data;
+};
+
+// Ajouter une fonction pour récupérer les profils filtrés par genre
+export const getNearbyProfiles = async (token: string) => {
+  const response = await axios.get(`${API_URL}/nearby-profiles`, {
+    headers: {
+      'Authorization': `Bearer ${token}` // Make sure token format is correct
+    }
   });
   return response.data;
 };

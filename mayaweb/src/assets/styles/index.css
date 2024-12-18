@@ -9,6 +9,7 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  @apply overflow-x-hidden;
 }
 
 code {
@@ -29,9 +30,14 @@ code {
 }
 
 header {
-  @apply bg-blue-600 text-white p-4;
+  @apply fixed top-0 left-0 right-0 z-50 bg-white shadow p-4;
 }
 
 footer {
-  @apply bg-gray-800 text-white p-4 mt-8;
+  @apply fixed bottom-0 left-0 right-0 z-50 bg-white shadow-md p-4;
+}
+
+.main-content {
+  @apply pt-20 pb-20; /* Espacement pour éviter que le contenu soit caché sous header/footer */
+  min-height: calc(100vh - 8rem); /* Hauteur minimale en tenant compte du header et footer */
 }

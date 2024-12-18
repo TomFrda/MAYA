@@ -44,7 +44,21 @@ const userSchema = new mongoose.Schema({
       coordinates: {
         type: [Number],
         index: '2dsphere'
+      },
+      lastUpdated: {
+        type: Date,
+        default: Date.now
       }
+    },
+    gender: {
+      type: String,
+      enum: ['homme', 'femme'],
+      required: [true, 'Le genre est obligatoire']
+    },
+    interested_in: {
+      type: String,
+      enum: ['homme', 'femme'],
+      required: [true, 'La préférence de genre est obligatoire']
     }
 });
 
