@@ -212,10 +212,18 @@ router.get('/nearbyUsers', auth, async (req, res) => {
   }
 });
 
+// Route pour récupérer les profils à proximité
 router.get('/nearby-profiles', auth, async (req, res) => {
   try {
     const user = await User.findById(req.user.id);
-    const maxDistance = user.maxDistance * 1000; // Convertir en mètres
+    console.log('Current user:', {
+      id: user._id,
+      gender: user.gender,
+      interested_in: user.interested_in,
+      location: user.location
+    });
+
+    const maxDistance = user.maxDistance * 1000;
 
     const profiles = await User.find({
       _id: { $ne: user._id },
@@ -232,6 +240,13 @@ router.get('/nearby-profiles', auth, async (req, res) => {
       }
     }).select('first_name age profilePhotos bio location gender interested_in');
 
+    console.log('Found profiles:', profiles.map(p => ({
+      id: p._id,
+      gender: p.gender,
+      interested_in: p.interested_in,
+      location: p.location
+    })));
+
     const formattedProfiles = profiles.map(profile => ({
       id: profile._id,
       name: profile.first_name,
@@ -240,13 +255,14 @@ router.get('/nearby-profiles', auth, async (req, res) => {
         ? `http://localhost:5000/uploads/${profile.profilePhotos[0]}` 
         : '',
       bio: profile.bio || '',
-      distance: '', // Vous pouvez calculer la distance ici si nécessaire
+      distance: '', 
       gender: profile.gender,
       interested_in: profile.interested_in
     }));
 
     res.status(200).json(formattedProfiles);
   } catch (error) {
+    console.error('Error fetching nearby profiles:', error.stack);
     res.status(500).json({ message: 'Failed to fetch nearby profiles', error });
   }
 });

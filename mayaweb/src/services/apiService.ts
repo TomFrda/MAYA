@@ -7,13 +7,18 @@ const API_URL = 'http://localhost:5000/api/users';
 
 // Login function
 export const login = async (email: string, password: string, latitude?: number, longitude?: number): Promise<LoginResponse> => {
-  const response = await axios.post<LoginResponse>(`${API_URL}/login`, {
-    email,
-    password,
-    latitude,
-    longitude,
-  });
-  return response.data;
+  try {
+    const response = await axios.post<LoginResponse>(`${API_URL}/login`, {
+      email,
+      password,
+      ...(latitude && longitude ? { latitude, longitude } : {})
+    });
+    
+    return response.data;
+  } catch (error) {
+    console.error('Login error:', error);
+    throw error;
+  }
 };
 
 // Signup function

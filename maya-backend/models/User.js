@@ -12,7 +12,8 @@ const userSchema = new mongoose.Schema({
       type: String,
       required: [true, 'L\'email est obligatoire'],
       unique: true,
-      lowercase: true
+      lowercase: true,
+      validate: [isEmail, 'Email invalide']
     },
     phone_number: {
       type: String,
@@ -22,6 +23,7 @@ const userSchema = new mongoose.Schema({
     password: {
       type: String,
       required: [true, 'Le mot de passe est obligatoire'],
+      minlength: [6, 'Le mot de passe doit contenir au moins 6 caractères']
     },
     verificationCode: {
       type: String,
@@ -43,7 +45,7 @@ const userSchema = new mongoose.Schema({
       },
       coordinates: {
         type: [Number],
-        index: '2dsphere'
+        index: '2dsphere'  // Important for geospatial queries
       },
       lastUpdated: {
         type: Date,
@@ -65,6 +67,9 @@ const userSchema = new mongoose.Schema({
       default: 50 // Par défaut, 50 km
     }
 });
+
+// Ensure the location field is indexed for geospatial queries
+userSchema.index({ location: '2dsphere' });
 
 // Hacher le mot de passe avant de le sauvegarder
 userSchema.pre('save', async function (next) {

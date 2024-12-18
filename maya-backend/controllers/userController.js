@@ -81,32 +81,60 @@ const removeProfilePhoto = async (req, res) => {
 
 // Contrôleur pour la connexion des utilisateurs
 const loginUser = async (req, res) => {
-  const { email, password, latitude, longitude } = req.body;
-
   try {
+    const { email, password, latitude, longitude } = req.body;
+    console.log('Login request received:', { email, password, latitude, longitude });
+
+    // Validation
+    if (!email || !password) {
+      console.log('Validation failed: Email and password are required');
+      return res.status(400).json({ message: 'Email et mot de passe requis' });
+    }
+
+    // Find user
     const user = await User.findOne({ email });
     if (!user) {
-      return res.status(404).json({ message: 'Utilisateur non trouvé' });
+      console.log('User not found');
+      return res.status(400).json({ message: 'Email ou mot de passe incorrect' });
     }
 
+    // Check password
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
-      return res.status(400).json({ message: 'Mot de passe incorrect' });
+      console.log('Password mismatch');
+      return res.status(400).json({ message: 'Email ou mot de passe incorrect' });
     }
 
-    // Mettre à jour la localisation de l'utilisateur
-    user.location = {
-      type: 'Point',
-      coordinates: [longitude, latitude],
-      lastUpdated: new Date()
-    };
-    await user.save();
+    // Update location if provided
+    if (latitude && longitude) {
+      user.location = {
+        type: 'Point',
+        coordinates: [parseFloat(longitude), parseFloat(latitude)],
+        lastUpdated: new Date()
+      };
+      await user.save();
+    }
 
-    const token = jwt.sign({ id: user._id, email: user.email }, process.env.JWT_SECRET, { expiresIn: '1h' });
+    // Generate token
+    const token = jwt.sign(
+      { id: user._id, email: user.email },
+      process.env.JWT_SECRET,
+      { expiresIn: '1h' }
+    );
 
-    res.json({ message: 'Connexion réussie', token, user });
+    // Return success
+    res.json({
+      token,
+      user: {
+        id: user._id,
+        email: user.email,
+        first_name: user.first_name,
+        location: user.location
+      }
+    });
   } catch (error) {
-    res.status(500).json({ message: 'Erreur lors de la connexion', error });
+    console.error('Login error:', error);
+    res.status(500).json({ message: 'Erreur lors de la connexion' });
   }
 };
 
