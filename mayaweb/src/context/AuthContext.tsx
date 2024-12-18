@@ -1,4 +1,5 @@
 import React, { createContext, useState, useEffect } from 'react';
+import axios from 'axios';
 
 interface AuthContextType {
   token: string | null;
@@ -18,11 +19,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [token, setToken] = useState<string | null>(localStorage.getItem('token'));
   const [userInfo, setUserInfo] = useState<any>(JSON.parse(localStorage.getItem('userInfo') || 'null'));
 
+  useEffect(() => {
+    if (token) {
+      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+    } else {
+      delete axios.defaults.headers.common['Authorization'];
+    }
+  }, [token]);
+
   const login = (newToken: string, userInfo: any) => {
     setToken(newToken);
     setUserInfo(userInfo);
     localStorage.setItem('token', newToken);
-    axios.defaults.headers.common['Authorization'] = `Bearer ${newToken}`;
     localStorage.setItem('userInfo', JSON.stringify(userInfo));
   };
 
@@ -31,6 +39,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setUserInfo(null);
     localStorage.removeItem('token');
     localStorage.removeItem('userInfo');
+    delete axios.defaults.headers.common['Authorization'];
   };
 
   return (

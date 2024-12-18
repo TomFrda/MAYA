@@ -10,7 +10,17 @@ const auth = require('../middleware/auth');
 const router = express.Router();
 const { users, io } = require('../server'); // Importer users et io
 const multer = require('multer');
-const upload = multer({ dest: 'uploads/' });
+const path = require('path');
+
+const storage = multer.diskStorage({
+  destination: 'uploads/',
+  filename: function (req, file, cb) {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
+    cb(null, uniqueSuffix + path.extname(file.originalname));
+  }
+});
+
+const upload = multer({ storage: storage });
 
 console.log('JWT_SECRET:', process.env.JWT_SECRET);
 console.log('TWILIO_ACCOUNT_SID:', process.env.TWILIO_ACCOUNT_SID);
@@ -36,7 +46,7 @@ router.post('/signup', upload.single('photo'), async (req, res) => {
       password,
       gender,
       interested_in,
-      profilePhotos: [photoFile.path] // Stocker le chemin de la photo
+      profilePhotos: [photoFile.filename] // Stocker le nom de fichier de la photo
     });
     await user.save();
 
@@ -191,29 +201,30 @@ router.get('/nearbyUsers', auth, async (req, res) => {
 
 router.get('/nearby-profiles', auth, async (req, res) => {
   try {
-    console.log('User ID from token:', req.user.id);
     const user = await User.findById(req.user.id);
-    
-    if (!user) {
-      console.log('User not found with ID:', req.user.id);
-      return res.status(404).json({ message: 'User not found' });
-    }
-
-    console.log('Finding profiles for:', {
-      userGender: user.gender,
-      interestedIn: user.interested_in
-    });
-
     const profiles = await User.find({
       _id: { $ne: user._id },
       gender: user.interested_in,
       interested_in: user.gender
-    }).select('-password -verificationCode -verificationCodeExpires');
-
-    console.log('Found profiles:', profiles.length);
-    res.status(200).json(profiles);
+    }).select('first_name age profilePhotos bio location gender interested_in');
+    
+    const formattedProfiles = profiles.map(profile => ({
+      id: profile._id,
+      name: profile.first_name,
+      age: profile.age || '',
+      photo: profile.profilePhotos && profile.profilePhotos.length > 0 
+        ? `http://localhost:5000/${profile.profilePhotos[0]}` 
+        : '',
+      bio: profile.bio || '',
+      distance: '',
+      gender: profile.gender,
+      interested_in: profile.interested_in
+    }));
+    
+    console.log('Formatted profiles:', formattedProfiles); // Pour debug
+    res.status(200).json(formattedProfiles);
   } catch (error) {
-    console.error('Error fetching profiles:', error);
+    console.error('Error:', error);
     res.status(500).json({ message: 'Error fetching profiles' });
   }
 });

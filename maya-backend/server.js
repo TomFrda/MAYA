@@ -4,6 +4,8 @@ const morgan = require('morgan');
 const mongoose = require('mongoose');
 const http = require('http');
 const socketIo = require('socket.io');
+const path = require('path');
+const fs = require('fs');
 require('dotenv').config(); // Charger les variables d'environnement
 const redisClient = require('./config/redisClient'); // Assure la connexion à Redis
 
@@ -27,6 +29,15 @@ mongoose.connect(process.env.MONGODB_URI, { useNewUrlParser: true, useUnifiedTop
 app.use(express.json()); // Pour traiter les requêtes en JSON
 app.use(cors()); // Pour autoriser les requêtes de toutes les origines
 app.use(morgan('dev')); // Logger les requêtes
+
+// Assurez-vous que le dossier uploads existe
+const uploadsDir = path.join(__dirname, 'uploads');
+if (!fs.existsSync(uploadsDir)){
+    fs.mkdirSync(uploadsDir);
+}
+
+// Servir les fichiers statiques
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Importer les routes utilisateur
 const userRoutes = require('./routes/userRoutes');

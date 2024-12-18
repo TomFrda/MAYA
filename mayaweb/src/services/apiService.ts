@@ -1,11 +1,11 @@
 import axios from 'axios';
-import { LoginResponse, SignupResponse } from '../types/api';
+import { LoginResponse, SignupResponse, Profile } from '../types/api';
 
 axios.defaults.headers.common['Authorization'] = `Bearer ${localStorage.getItem('token')}`;
 
-const API_URL = 'http://localhost:5000/api/users'; // Remplacez par l'URL de votre backend
+const API_URL = 'http://localhost:5000/api/users';
 
-// Fonction pour se connecter
+// Login function
 export const login = async (email: string, password: string): Promise<LoginResponse> => {
   const response = await axios.post<LoginResponse>(`${API_URL}/login`, {
     email,
@@ -14,12 +14,12 @@ export const login = async (email: string, password: string): Promise<LoginRespo
   return response.data;
 };
 
-// Fonction pour s'inscrire
+// Signup function
 export const signup = async (
-  firstName: string, 
-  email: string, 
-  phoneNumber: string, 
-  password: string, 
+  firstName: string,
+  email: string,
+  phoneNumber: string,
+  password: string,
   gender: string,
   interestedIn: string,
   profilePhoto: File
@@ -38,6 +38,11 @@ export const signup = async (
       'Content-Type': 'multipart/form-data',
     },
   });
+
+  // Set the token in axios headers after successful signup
+  const token = response.data.token;
+  axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+  
   return response.data;
 };
 
@@ -76,11 +81,17 @@ export const getNearbyUsers = async (token: string, latitude: number, longitude:
 };
 
 // Ajouter une fonction pour récupérer les profils filtrés par genre
-export const getNearbyProfiles = async (token: string) => {
-  const response = await axios.get(`${API_URL}/nearby-profiles`, {
-    headers: {
-      'Authorization': `Bearer ${token}` // Make sure token format is correct
-    }
-  });
-  return response.data;
+export const getNearbyProfiles = async (token: string): Promise<Profile[]> => {
+  try {
+    const response = await axios.get<Profile[]>(`${API_URL}/nearby-profiles`, {
+      headers: {
+        'Authorization': `Bearer ${token}`
+      }
+    });
+    console.log('Profiles received:', response.data); // Pour debug
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching profiles:', error);
+    throw error;
+  }
 };
