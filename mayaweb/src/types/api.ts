@@ -11,7 +11,16 @@ export interface UserResponse {
 
 export interface LoginResponse {
   token: string;
-  user: any;
+  user: {
+    id: string;
+    email: string;
+    first_name: string;
+    location: {
+      type: string;
+      coordinates: number[];
+      lastUpdated: Date;
+    };
+  };
 }
 
 export interface SignupResponse {
@@ -23,9 +32,9 @@ export interface SignupResponse {
 export interface Profile {
   id: string;
   name: string;
-  age: string;
-  photo: string;
+  age: number;
   bio: string;
+  photos: string[];
   distance: string;
   gender: string;
   interested_in: string;

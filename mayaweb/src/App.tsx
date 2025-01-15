@@ -1,5 +1,5 @@
 import React from 'react';
-import { BrowserRouter as Router, Route, Switch, Redirect } from 'react-router-dom';
+import { BrowserRouter as Router, Switch, Redirect } from 'react-router-dom'; // Removed Route
 import HomePage from './components/pages/HomePage';
 import LoginPage from './components/pages/LoginPage';
 import SignUpPage from './components/pages/SignUpPage';
@@ -23,7 +23,6 @@ const App: React.FC = () => {
               <PublicRoute path="/" exact component={HomePage} />
               <PublicRoute path="/login" component={LoginPage} />
               <PublicRoute path="/signup" component={SignUpPage} />
-              
               {/* Route privée - redirection vers /login si non connecté */}
               <PrivateRoute path="/swipe" component={SwipePage} />
               <PrivateRoute path="/profile" component={ProfilePage} />

@@ -6,13 +6,18 @@ axios.defaults.headers.common['Authorization'] = `Bearer ${localStorage.getItem(
 const API_URL = 'http://localhost:5000/api/users';
 
 // Login function
-export const login = async (email: string, password: string, latitude?: number, longitude?: number): Promise<LoginResponse> => {
+export const login = async (email: string, password: string, latitude: number, longitude: number): Promise<LoginResponse> => {
   try {
     const response = await axios.post<LoginResponse>(`${API_URL}/login`, {
       email,
       password,
-      ...(latitude && longitude ? { latitude, longitude } : {})
+      latitude,
+      longitude
     });
+    
+    // Set the token in axios headers for subsequent requests
+    const token = response.data.token;
+    axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
     
     return response.data;
   } catch (error) {

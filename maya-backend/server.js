@@ -10,6 +10,7 @@ require('dotenv').config(); // Charger les variables d'environnement
 const redisClient = require('./config/redisClient'); // Assure la connexion à Redis
 const User = require('./models/User');
 const auth = require('./middleware/auth');
+const { users, setIo } = require('./socketManager'); // Importer users et setIo
 
 const app = express();
 const server = http.createServer(app);
@@ -20,12 +21,23 @@ const io = socketIo(server, {
   }
 });
 
+setIo(io); // Définir io dans le module socketManager
+
 const PORT = process.env.PORT || 5000;
 
 // Connexion à MongoDB
-mongoose.connect(process.env.MONGODB_URI, { useNewUrlParser: true, useUnifiedTopology: true })
-  .then(() => console.log('Connecté à MongoDB'))
-  .catch(err => console.error('Erreur de connexion à MongoDB', err));
+const connectDB = async () => {
+  try {
+    await mongoose.connect(process.env.MONGODB_URI, {
+      serverSelectionTimeoutMS: 5000, // Increase timeout to 5 seconds
+    });
+    console.log('Connecté à MongoDB');
+  } catch (err) {
+    console.error('Erreur de connexion à MongoDB', err);
+  }
+};
+
+connectDB();
 
 // Middleware
 app.use(express.json()); // Pour traiter les requêtes en JSON
@@ -39,14 +51,11 @@ if (!fs.existsSync(uploadsDir)){
 }
 
 // Servir les fichiers statiques
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use('/uploads', express.static('uploads'));
 
 // Importer les routes utilisateur
 const userRoutes = require('./routes/userRoutes');
 app.use('/api/users', userRoutes); // Utiliser les routes définies dans userRoutes.js
-
-// Stocker les sockets des utilisateurs connectés
-const users = {};
 
 io.on('connection', (socket) => {
   console.log('Nouvelle connexion:', socket.id);

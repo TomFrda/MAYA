@@ -22,8 +22,8 @@ const userSchema = new mongoose.Schema({
   },
   password: {
     type: String,
-    required: [true, 'Le mot de passe est obligatoire'],
-    minlength: [6, 'Le mot de passe doit contenir au moins 6 caractères']
+    required: [true, 'Password is required'],
+    select: false // Won't include password by default
   },
   verificationCode: {
     type: String,
@@ -35,7 +35,8 @@ const userSchema = new mongoose.Schema({
   },
   profilePhotos: {
     type: [String], // Tableau d'URLs de photos de profil
-    default: []
+    default: [],
+    validate: [arrayLimit, 'L\'utilisateur doit avoir au moins trois photos']
   },
   location: {
     type: {
@@ -83,10 +84,21 @@ userSchema.index({ location: '2dsphere' });
 
 // Hacher le mot de passe avant de le sauvegarder
 userSchema.pre('save', async function (next) {
-  const salt = await bcrypt.genSalt();
-  this.password = await bcrypt.hash(this.password, salt);
-  next();
+  // Only hash the password if it's been modified or is new
+  if (!this.isModified('password')) return next();
+
+  try {
+    const salt = await bcrypt.genSalt(10);
+    this.password = await bcrypt.hash(this.password, salt); 
+    next();
+  } catch (error) {
+    next(error);
+  }
 });
+
+function arrayLimit(val) {
+  return val.length >= 1;
+}
 
 // Créer et exporter le modèle utilisateur
 const User = mongoose.model('User', userSchema);

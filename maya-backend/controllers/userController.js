@@ -79,65 +79,6 @@ const removeProfilePhoto = async (req, res) => {
   }
 };
 
-// Contrôleur pour la connexion des utilisateurs
-const loginUser = async (req, res) => {
-  try {
-    const { email, password, latitude, longitude } = req.body;
-    console.log('Login request received:', { email, password, latitude, longitude });
-
-    // Validation
-    if (!email || !password) {
-      console.log('Validation failed: Email and password are required');
-      return res.status(400).json({ message: 'Email et mot de passe requis' });
-    }
-
-    // Find user
-    const user = await User.findOne({ email });
-    if (!user) {
-      console.log('User not found');
-      return res.status(400).json({ message: 'Email ou mot de passe incorrect' });
-    }
-
-    // Check password
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) {
-      console.log('Password mismatch');
-      return res.status(400).json({ message: 'Email ou mot de passe incorrect' });
-    }
-
-    // Update location if provided
-    if (latitude && longitude) {
-      user.location = {
-        type: 'Point',
-        coordinates: [parseFloat(longitude), parseFloat(latitude)],
-        lastUpdated: new Date()
-      };
-      await user.save();
-    }
-
-    // Generate token
-    const token = jwt.sign(
-      { id: user._id, email: user.email },
-      process.env.JWT_SECRET,
-      { expiresIn: '1h' }
-    );
-
-    // Return success
-    res.json({
-      token,
-      user: {
-        id: user._id,
-        email: user.email,
-        first_name: user.first_name,
-        location: user.location
-      }
-    });
-  } catch (error) {
-    console.error('Login error:', error);
-    res.status(500).json({ message: 'Erreur lors de la connexion' });
-  }
-};
-
 // Contrôleur pour récupérer les informations de l'utilisateur
 const getUserInfo = async (req, res) => {
   try {
@@ -152,10 +93,64 @@ const getUserInfo = async (req, res) => {
   }
 };
 
+const loginUser = async (req, res) => {
+  try {
+    const { email, password, latitude, longitude } = req.body;
+    console.log('Login attempt:', { email, latitude, longitude });
+
+    // Find user WITH password - important to explicitly select password
+    const user = await User.findOne({ email }).select('+password');
+    
+    if (!user) {
+      return res.status(400).json({ message: 'Invalid credentials' });
+    }
+
+    // Compare passwords
+    const isMatch = await bcrypt.compare(password, user.password);
+    console.log('Password verification:', { isMatch });
+
+    if (!isMatch) {
+      return res.status(400).json({ message: 'Invalid credentials' });
+    }
+
+    // Update location if provided
+    if (latitude && longitude) {
+      user.location = {
+        type: 'Point',
+        coordinates: [parseFloat(longitude), parseFloat(latitude)],
+        lastUpdated: new Date()
+      };
+      await user.save();
+    }
+
+    // Generate JWT token
+    const token = jwt.sign(
+      { id: user._id, email: user.email },
+      process.env.JWT_SECRET,
+      { expiresIn: '24h' }
+    );
+
+    // Return success response
+    res.status(200).json({
+      token,
+      user: {
+        id: user._id,
+        email: user.email,
+        first_name: user.first_name,
+        location: user.location,
+        profilePhotos: user.profilePhotos
+      }
+    });
+  } catch (error) {
+    console.error('Login error:', error);
+    res.status(500).json({ message: 'Server error during login' });
+  }
+};
+
 module.exports = {
   updateUserProfile,
   addProfilePhoto,
   removeProfilePhoto,
   loginUser,
-  getUserInfo,
+  getUserInfo
 };

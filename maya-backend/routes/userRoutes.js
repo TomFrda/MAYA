@@ -8,7 +8,7 @@ const redisClient = require('../config/redisClient'); // Importer le client Redi
 const { updateUserProfile, addProfilePhoto, removeProfilePhoto, loginUser, getUserInfo } = require('../controllers/userController'); // Importer getUserInfo
 const auth = require('../middleware/auth');
 const router = express.Router();
-const { users, io } = require('../server'); // Importer users et io
+const { users, io } = require('../socketManager'); // Importer users et io
 const multer = require('multer');
 const path = require('path');
 
@@ -22,51 +22,7 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage: storage });
 
-// Route d'inscription
-router.post('/signup', upload.single('photo'), async (req, res) => {
-  const { first_name, email, phone_number, password, gender, interested_in, latitude, longitude } = req.body;
-  const photoFile = req.file;
 
-  if (!photoFile) {
-    return res.status(400).json({ message: 'La photo de profil est obligatoire' });
-  }
-
-  try {
-    const hashedPassword = await bcrypt.hash(password, 10);
-    const user = new User({ 
-      first_name, 
-      email, 
-      phone_number, 
-      password: hashedPassword,
-      gender,
-      interested_in,
-      profilePhotos: [photoFile.filename], // Stocker le nom de fichier de la photo
-      location: {
-        type: 'Point',
-        coordinates: [longitude, latitude],
-        lastUpdated: new Date()
-      }
-    });
-    await user.save();
-
-    const token = jwt.sign(
-      { id: user._id, email: user.email }, 
-      process.env.JWT_SECRET, 
-      { expiresIn: '1h' }
-    );
-
-    res.status(201).json({ 
-      message: 'Utilisateur créé avec succès', 
-      token, 
-      user: {
-        ...user.toJSON(),
-        password: undefined
-      }
-    });
-  } catch (error) {
-    res.status(500).json({ message: 'Erreur lors de la création de l\'utilisateur', error });
-  }
-});
 
 // Route de connexion
 router.post('/login', loginUser);
@@ -238,10 +194,8 @@ router.get('/nearby-profiles', auth, async (req, res) => {
       id: profile._id,
       name: profile.first_name,
       age: profile.age || '',
-      photo: profile.profilePhotos && profile.profilePhotos.length > 0 
-        ? `http://localhost:5000/uploads/${profile.profilePhotos[0]}` 
-        : '',
       bio: profile.bio || '',
+      photos: profile.profilePhotos || [], // Send the full array of photos
       distance: '', 
       gender: profile.gender,
       interested_in: profile.interested_in
@@ -292,6 +246,69 @@ router.post('/like', auth, async (req, res) => {
   } catch (error) {
     console.error('Error liking profile:', error);
     res.status(500).json({ message: 'Erreur lors du like du profil', error });
+  }
+});
+
+router.post('/signup', upload.array('photos', 1), async (req, res) => {
+  try {
+    const { first_name, email, phone_number, password, gender, interested_in, latitude, longitude } = req.body;
+    const photoFiles = req.files;
+
+    // Validate required fields
+    if (!first_name || !email || !password || !phone_number) {
+      return res.status(400).json({ message: 'All fields are required' });
+    }
+
+    // Check if user already exists
+    const existingUser = await User.findOne({ 
+      $or: [{ email }, { phone_number }] 
+    });
+    
+    if (existingUser) {
+      return res.status(400).json({ 
+        message: 'User with this email or phone number already exists' 
+      });
+    }
+
+    // Create new user
+    const user = new User({
+      first_name,
+      email,
+      phone_number,
+      password, // Will be hashed by the pre-save middleware
+      gender,
+      interested_in,
+      profilePhotos: photoFiles ? photoFiles.map(file => file.filename) : [],
+      location: {
+        type: 'Point',
+        coordinates: [parseFloat(longitude), parseFloat(latitude)],
+        lastUpdated: new Date()
+      }
+    });
+
+    await user.save();
+
+    // Generate token
+    const token = jwt.sign(
+      { id: user._id, email: user.email },
+      process.env.JWT_SECRET,
+      { expiresIn: '24h' }
+    );
+
+    res.status(201).json({
+      message: 'User created successfully',
+      token,
+      user: {
+        id: user._id,
+        email: user.email,
+        first_name: user.first_name,
+        location: user.location,
+        profilePhotos: user.profilePhotos
+      }
+    });
+  } catch (error) {
+    console.error('Signup error:', error);
+    res.status(500).json({ message: 'Error creating user', error: error.message });
   }
 });
 

@@ -1,8 +1,8 @@
 import React, { useState, useContext } from 'react';
 import { Link, useHistory } from 'react-router-dom';
-import { signup } from '../../services/apiService';
-import { SignupResponse } from '../../types/api';
+import axios from 'axios';
 import { AuthContext } from '../../context/AuthContext';
+import { SignupResponse } from '../../types/api';
 
 const SignUpPage: React.FC = () => {
   const [firstName, setFirstName] = useState('');
@@ -11,41 +11,41 @@ const SignUpPage: React.FC = () => {
   const [password, setPassword] = useState('');
   const [gender, setGender] = useState('');
   const [interestedIn, setInterestedIn] = useState('');
-  const [profilePhoto, setProfilePhoto] = useState<File | null>(null);
-  const [latitude, setLatitude] = useState<number | null>(null);
-  const [longitude, setLongitude] = useState<number | null>(null);
+  const [latitude] = useState(0);
+  const [longitude] = useState(0);
+  const [photos, setPhotos] = useState<File[]>([]);
   const [error, setError] = useState('');
   const { login } = useContext(AuthContext);
   const history = useHistory();
 
-  const handlePhotoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files[0]) {
-      setProfilePhoto(e.target.files[0]);
-    }
-  };
-
   const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!profilePhoto) {
-      setError('Une photo de profil est obligatoire');
-      return;
-    }
-    try {
-      if (navigator.geolocation) {
-        navigator.geolocation.getCurrentPosition(async (position) => {
-          setLatitude(position.coords.latitude);
-          setLongitude(position.coords.longitude);
 
-          const response: SignupResponse = await signup(firstName, email, phoneNumber, password, gender, interestedIn, profilePhoto, position.coords.latitude, position.coords.longitude);
-          login(response.token, response.user); // This should set the token in your AuthContext
-          history.push('/swipe');
-        });
-      } else {
-        setError('La géolocalisation n\'est pas supportée par ce navigateur.');
-      }
+    const formData = new FormData();
+    formData.append('first_name', firstName);
+    formData.append('email', email);
+    formData.append('phone_number', phoneNumber);
+    formData.append('password', password);
+    formData.append('gender', gender);
+    formData.append('interested_in', interestedIn);
+    formData.append('latitude', latitude.toString());
+    formData.append('longitude', longitude.toString());
+    photos.forEach((photo, index) => {
+      formData.append('photos', photo); // Ensure the field name is 'photos'
+    });
+
+    try {
+      const response = await axios.post<SignupResponse>('http://localhost:5000/api/users/signup', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      console.log('User created successfully:', response.data);
+      login(response.data.token, response.data.user); // This should set the token in your AuthContext
+      history.push('/swipe');
     } catch (err) {
       setError('Erreur lors de l\'inscription');
-      console.error(err);
+      console.error('Error creating user:', err);
     }
   };
 
@@ -74,7 +74,7 @@ const SignUpPage: React.FC = () => {
                 <label className="block mb-2 text-sm font-medium text-gray-700">Email</label>
                 <input
                   type="email"
-                  placeholder="votre@email.com"
+                  placeholder="Votre email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-pink-500 focus:border-pink-500"
@@ -82,9 +82,9 @@ const SignUpPage: React.FC = () => {
                 />
               </div>
               <div>
-                <label className="block mb-2 text-sm font-medium text-gray-700">Téléphone</label>
+                <label className="block mb-2 text-sm font-medium text-gray-700">Numéro de téléphone</label>
                 <input
-                  type="tel"
+                  type="text"
                   placeholder="Votre numéro de téléphone"
                   value={phoneNumber}
                   onChange={(e) => setPhoneNumber(e.target.value)}
@@ -96,7 +96,7 @@ const SignUpPage: React.FC = () => {
                 <label className="block mb-2 text-sm font-medium text-gray-700">Mot de passe</label>
                 <input
                   type="password"
-                  placeholder="••••••••"
+                  placeholder="Votre mot de passe"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-pink-500 focus:border-pink-500"
@@ -108,7 +108,7 @@ const SignUpPage: React.FC = () => {
                 <select
                   value={gender}
                   onChange={(e) => setGender(e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-pink-500 focus:border-pink-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg"
                   required
                 >
                   <option value="">Sélectionnez votre genre</option>
@@ -117,25 +117,24 @@ const SignUpPage: React.FC = () => {
                 </select>
               </div>
               <div>
-                <label className="block mb-2 text-sm font-medium text-gray-700">Je souhaite rencontrer</label>
+                <label className="block mb-2 text-sm font-medium text-gray-700">Intéressé par</label>
                 <select
                   value={interestedIn}
                   onChange={(e) => setInterestedIn(e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-pink-500 focus:border-pink-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg"
                   required
                 >
-                  <option value="">Sélectionnez une préférence</option>
+                  <option value="">Sélectionnez une option</option>
                   <option value="homme">Homme</option>
                   <option value="femme">Femme</option>
                 </select>
               </div>
               <div>
-                <label className="block mb-2 text-sm font-medium text-gray-700">Photo de profil</label>
+                <label className="block mb-2 text-sm font-medium text-gray-700">Photos de profil</label>
                 <input
                   type="file"
-                  accept="image/*"
-                  onChange={handlePhotoChange}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-pink-500 focus:border-pink-500"
+                  onChange={(e) => setPhotos(Array.from(e.target.files || []))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg"
                   required
                 />
               </div>
