@@ -21,6 +21,24 @@ const Header: React.FC = () => {
                   Bonjour, {userInfo?.first_name}
                 </span>
                 <Link 
+                  to="/swipe" 
+                  className="text-gray-600 hover:text-pink-500 transition-colors"
+                >
+                  Swipe
+                </Link>
+                <Link 
+                  to="/matches" 
+                  className="text-gray-600 hover:text-pink-500 transition-colors"
+                >
+                  Matchs
+                </Link>
+                <Link 
+                  to="/messages" 
+                  className="text-gray-600 hover:text-pink-500 transition-colors"
+                >
+                  Messages
+                </Link>
+                <Link 
                   to="/profile" 
                   className="text-gray-600 hover:text-pink-500 transition-colors"
                 >

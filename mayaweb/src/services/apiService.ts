@@ -1,5 +1,6 @@
 import axios from 'axios';
-import { LoginResponse, SignupResponse, Profile } from '../types/api';
+import { useEffect, useState } from 'react';
+import { LoginResponse, SignupResponse, Profile, Message, Chat } from '../types/api';
 
 axios.defaults.headers.common['Authorization'] = `Bearer ${localStorage.getItem('token')}`;
 
@@ -138,4 +139,70 @@ export const uploadProfilePhoto = async (token: string, photo: File) => {
     },
   });
   return response.data;
+};
+
+// Function to get user matches
+export const getMatches = async (token: string): Promise<Profile[]> => {
+  const response = await axios.get<Profile[]>(`${API_URL}/matches`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+  return response.data;
+};
+
+// Récupérer les conversations
+export const getChats = async (token: string): Promise<Chat[]> => {
+  const response = await axios.get<Chat[]>(`${API_URL}/chats`, {
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  });
+  return response.data;
+};
+
+// Récupérer les messages d'une conversation
+export const getMessages = async (token: string, chatId: string): Promise<Message[]> => {
+  const response = await axios.get<Message[]>(`${API_URL}/messages/${chatId}`, {
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  });
+  return response.data;
+};
+
+// Envoyer un message
+export const sendMessage = async (token: string, to: string, content: string): Promise<Message> => {
+  const response = await axios.post<Message>(`${API_URL}/messages`, {
+    to,
+    content
+  }, {
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  });
+  return response.data;
+};
+// Charger les messages quand un chat est sélectionné
+const MessagesComponent = () => {
+  const [selectedChat, setSelectedChat] = useState<string | null>(null);
+  const [messages, setMessages] = useState<Message[]>([]);
+  const token = localStorage.getItem('token');
+
+  useEffect(() => {
+    const loadMessages = async () => {
+      if (selectedChat && token) {
+        try {
+          const messagesData = await getMessages(token, selectedChat);
+          setMessages(messagesData);
+        } catch (error) {
+          console.error('Error loading messages:', error);
+        }
+      }
+    };
+    
+    loadMessages();
+  }, [selectedChat, token]);
+
+  return null; // Replace with your component's JSX
 };

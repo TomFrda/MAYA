@@ -11,6 +11,7 @@ const router = express.Router();
 const { users, io } = require('../socketManager'); // Importer users et io
 const multer = require('multer');
 const path = require('path');
+const Message = require('../models/Message');
 
 const storage = multer.diskStorage({
   destination: 'uploads/',
@@ -309,6 +310,101 @@ router.post('/signup', upload.array('photos', 1), async (req, res) => {
   } catch (error) {
     console.error('Signup error:', error);
     res.status(500).json({ message: 'Error creating user', error: error.message });
+  }
+});
+
+// Route pour rafraîchir le token
+router.post('/refresh-token', async (req, res) => {
+  const { token } = req.body;
+
+  try {
+    // Vérifier le token sans vérifier l'expiration
+    const decoded = jwt.verify(token, process.env.JWT_SECRET, { ignoreExpiration: true });
+    
+    // Générer un nouveau token
+    const newToken = jwt.sign(
+      { id: decoded.id, email: decoded.email },
+      process.env.JWT_SECRET,
+      { expiresIn: '24h' }
+    );
+    
+    res.status(200).json({ token: newToken });
+  } catch (error) {
+    console.error('Error refreshing token:', error);
+    res.status(500).json({ message: 'Failed to refresh token', error });
+  }
+});
+
+// Route pour récupérer les matchs de l'utilisateur
+router.get('/matches', auth, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id).populate('matches', 'first_name profilePhotos');
+    if (!user) {
+      return res.status(404).json({ message: 'Utilisateur non trouvé' });
+    }
+    res.status(200).json(user.matches);
+  } catch (error) {
+    console.error('Error fetching matches:', error);
+    res.status(500).json({ message: 'Erreur lors de la récupération des matchs', error });
+  }
+});
+
+// Route pour récupérer les conversations
+router.get('/chats', auth, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+    const chats = await Promise.all(
+      user.matches.map(async (matchId) => {
+        const matchUser = await User.findById(matchId)
+          .select('first_name profilePhotos');
+        return {
+          userId: matchUser._id,
+          firstName: matchUser.first_name,
+          profilePhoto: matchUser.profilePhotos[0]
+        };
+      })
+    );
+    res.json(chats);
+  } catch (error) {
+    res.status(500).json({ message: 'Erreur lors de la récupération des conversations' });
+  }
+});
+
+// Route pour récupérer les messages d'une conversation
+router.get('/messages/:chatId', auth, async (req, res) => {
+  try {
+    const messages = await Message.find({
+      $or: [
+        { from: req.user.id, to: req.params.chatId },
+        { from: req.params.chatId, to: req.user.id }
+      ]
+    }).sort('timestamp');
+    res.json(messages);
+  } catch (error) {
+    res.status(500).json({ message: 'Erreur lors de la récupération des messages' });
+  }
+});
+
+// Route pour envoyer un message
+router.post('/messages', auth, async (req, res) => {
+  try {
+    const { to, content } = req.body;
+    const message = new Message({
+      from: req.user.id,
+      to,
+      content
+    });
+    await message.save();
+
+    // Envoyer le message via Socket.IO
+    const recipientSocketId = users[to];
+    if (recipientSocketId) {
+      io.to(recipientSocketId).emit('receiveMessage', message);
+    }
+
+    res.json(message);
+  } catch (error) {
+    res.status(500).json({ message: 'Erreur lors de l\'envoi du message' });
   }
 });
 

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'swipe_page.dart';
 import 'profile_page.dart';
 import 'liked_profiles_page.dart';
+import 'match_page.dart'; // Importez le nouveau composant
 
 class MainPage extends StatefulWidget {
   final String token;
@@ -19,7 +20,7 @@ class _MainPageState extends State<MainPage> {
     LikedProfilesPage(),
     Text('Placeholder for another page'),
     SwipePage(),
-    Text('Placeholder for another page'),
+    MatchPage(), // Ajoutez le nouvel onglet ici
     ProfilePage(),
   ];
 
@@ -50,8 +51,8 @@ class _MainPageState extends State<MainPage> {
             label: 'Swipe',
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.message),
-            label: 'Messages',
+            icon: Icon(Icons.favorite), // Icône pour l'onglet Match
+            label: 'Match',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.person),

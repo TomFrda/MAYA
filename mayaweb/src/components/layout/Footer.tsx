@@ -7,7 +7,7 @@ const Footer: React.FC = () => {
       <div className="container mx-auto px-6 py-4">
         <div className="flex flex-col md:flex-row justify-between items-center">
           <div className="text-gray-600 text-sm">
-            © 2023 Maya. Tous droits réservés.
+            © 2025 Maya. Tous droits réservés.
           </div>
           <div className="flex space-x-6 mt-4 md:mt-0">
             <Link to="/privacy" className="text-gray-600 hover:text-pink-500 text-sm transition-colors">

@@ -3,7 +3,11 @@ import axios from 'axios';
 
 interface AuthContextType {
   token: string | null;
-  userInfo: any | null;
+  userInfo: any;
+  user: {
+    id: string;
+    profilePhotos?: string[];
+  } | null;
   login: (token: string, userInfo: any) => void;
   logout: () => void;
 }
@@ -11,6 +15,7 @@ interface AuthContextType {
 export const AuthContext = createContext<AuthContextType>({
   token: null,
   userInfo: null,
+  user: null,
   login: () => {},
   logout: () => {}
 });
@@ -43,7 +48,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider value={{ token, userInfo, login, logout }}>
+    <AuthContext.Provider 
+      value={{ 
+        token, 
+        userInfo, 
+        user: userInfo ? {
+          id: userInfo.id,
+          profilePhotos: userInfo.profilePhotos
+        } : null,
+        login, 
+        logout 
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

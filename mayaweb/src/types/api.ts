@@ -31,11 +31,25 @@ export interface SignupResponse {
 
 export interface Profile {
   id: string;
+  first_name: string;
+  profilePhotos: string[];
+  bio: string;
   name: string;
   age: number;
-  bio: string;
   photos: string[];
-  distance: string;
-  gender: string;
-  interested_in: string;
+  // other properties...
+}
+
+export interface Message {
+  from: string;
+  to: string;
+  content: string;
+  timestamp: Date;
+}
+
+export interface Chat {
+  userId: string;
+  firstName: string;
+  profilePhoto: string;
+  lastMessage?: Message;
 }
