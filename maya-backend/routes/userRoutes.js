@@ -357,10 +357,27 @@ router.get('/chats', auth, async (req, res) => {
       user.matches.map(async (matchId) => {
         const matchUser = await User.findById(matchId)
           .select('first_name profilePhotos');
+        
+        // Vérifier les nouveaux messages
+        const lastMessage = await Message.findOne({
+          $or: [
+            { from: req.user.id, to: matchId },
+            { from: matchId, to: req.user.id }
+          ]
+        }).sort('-timestamp');
+
+        const hasNewMessage = await Message.exists({
+          from: matchId,
+          to: req.user.id,
+          read: false
+        });
+
         return {
           userId: matchUser._id,
           firstName: matchUser.first_name,
-          profilePhoto: matchUser.profilePhotos[0]
+          profilePhoto: matchUser.profilePhotos[0],
+          lastMessage,
+          hasNewMessage: !!hasNewMessage
         };
       })
     );
@@ -405,6 +422,46 @@ router.post('/messages', auth, async (req, res) => {
     res.json(message);
   } catch (error) {
     res.status(500).json({ message: 'Erreur lors de l\'envoi du message' });
+  }
+});
+
+// Route pour marquer les messages comme lus
+router.put('/messages/read/:chatId', auth, async (req, res) => {
+  try {
+    await Message.updateMany(
+      {
+        from: req.params.chatId,
+        to: req.user.id,
+        read: false
+      },
+      { read: true }
+    );
+    res.status(200).json({ message: 'Messages marqués comme lus' });
+  } catch (error) {
+    res.status(500).json({ message: 'Erreur lors de la mise à jour des messages' });
+  }
+});
+
+// Route pour supprimer un message
+router.delete('/messages/:messageId', auth, async (req, res) => {
+  try {
+    const message = await Message.findById(req.params.messageId);
+    
+    if (!message) {
+      return res.status(404).json({ message: 'Message non trouvé' });
+    }
+
+    // Vérifier que l'utilisateur est l'expéditeur du message
+    if (message.from.toString() !== req.user.id) {
+      return res.status(403).json({ message: 'Non autorisé à supprimer ce message' });
+    }
+
+    // Utiliser findByIdAndDelete au lieu de remove()
+    await Message.findByIdAndDelete(req.params.messageId);
+    res.status(200).json({ message: 'Message supprimé avec succès' });
+  } catch (error) {
+    console.error('Error deleting message:', error);
+    res.status(500).json({ message: 'Erreur lors de la suppression du message' });
   }
 });
 

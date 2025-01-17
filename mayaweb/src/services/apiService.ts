@@ -183,6 +183,25 @@ export const sendMessage = async (token: string, to: string, content: string): P
   });
   return response.data;
 };
+
+// Marquer les messages comme lus
+export const markMessagesAsRead = async (token: string, chatId: string): Promise<void> => {
+  await axios.put(`${API_URL}/messages/read/${chatId}`, {}, {
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  });
+};
+
+// Supprimer un message
+export const deleteMessage = async (token: string, messageId: string): Promise<void> => {
+  await axios.delete(`${API_URL}/messages/${messageId}`, {
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  });
+};
+
 // Charger les messages quand un chat est sélectionné
 const MessagesComponent = () => {
   const [selectedChat, setSelectedChat] = useState<string | null>(null);

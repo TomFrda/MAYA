@@ -56,11 +56,17 @@ const MatchPage: React.FC = () => {
                 className="bg-white rounded-lg shadow-lg overflow-hidden transform transition-all duration-300 hover:scale-105"
               >
                 <div className="relative pb-[100%]">
-                  <img 
-                    src={match.profilePhotos[0]} 
-                    alt={match.first_name}
-                    className="absolute top-0 left-0 w-full h-full object-cover"
-                  />
+                    {match.profilePhotos.length > 0 ? (
+                    <img 
+                      src={`http://localhost:5000/uploads/${match.profilePhotos[0]}`} 
+                      alt={match.first_name}
+                      className="absolute top-0 left-0 w-full h-full object-cover"
+                    />
+                    ) : (
+                    <div className="absolute top-0 left-0 w-full h-full flex items-center justify-center bg-gray-200">
+                      <span className="text-gray-500">No Image</span>
+                    </div>
+                    )}
                 </div>
                 <div className="p-4">
                   <h3 className="text-xl font-semibold text-gray-800 mb-2">

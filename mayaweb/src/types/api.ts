@@ -41,6 +41,7 @@ export interface Profile {
 }
 
 export interface Message {
+  _id: string;
   from: string;
   to: string;
   content: string;
@@ -52,4 +53,5 @@ export interface Chat {
   firstName: string;
   profilePhoto: string;
   lastMessage?: Message;
+  hasNewMessage?: boolean;  // Add this field
 }
