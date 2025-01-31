@@ -12,6 +12,7 @@ const { users, io } = require('../socketManager'); // Importer users et io
 const multer = require('multer');
 const path = require('path');
 const Message = require('../models/Message');
+const mongoose = require('mongoose');
 
 const storage = multer.diskStorage({
   destination: 'uploads/',
@@ -23,7 +24,31 @@ const storage = multer.diskStorage({
 
 const upload = multer({ storage: storage });
 
-
+const messageSchema = new mongoose.Schema({
+  from: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true
+  },
+  to: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true
+  },
+  content: {
+    type: String,
+    required: true
+  },
+  type: {
+    type: String,
+    enum: ['text', 'gif', 'sticker'],
+    default: 'text'
+  },
+  timestamp: {
+    type: Date,
+    default: Date.now
+  }
+});
 
 // Route de connexion
 router.post('/login', loginUser);
@@ -356,16 +381,8 @@ router.get('/chats', auth, async (req, res) => {
     const chats = await Promise.all(
       user.matches.map(async (matchId) => {
         const matchUser = await User.findById(matchId)
-          .select('first_name profilePhotos');
+          .select('first_name profilePhotos isOnline lastActive');
         
-        // Vérifier les nouveaux messages
-        const lastMessage = await Message.findOne({
-          $or: [
-            { from: req.user.id, to: matchId },
-            { from: matchId, to: req.user.id }
-          ]
-        }).sort('-timestamp');
-
         const hasNewMessage = await Message.exists({
           from: matchId,
           to: req.user.id,
@@ -376,8 +393,9 @@ router.get('/chats', auth, async (req, res) => {
           userId: matchUser._id,
           firstName: matchUser.first_name,
           profilePhoto: matchUser.profilePhotos[0],
-          lastMessage,
-          hasNewMessage: !!hasNewMessage
+          isOnline: matchUser.isOnline,
+          lastActive: matchUser.lastActive,
+          hasNewMessage: !!hasNewMessage  // S'assurer que cette valeur est bien renvoyée
         };
       })
     );
@@ -405,11 +423,12 @@ router.get('/messages/:chatId', auth, async (req, res) => {
 // Route pour envoyer un message
 router.post('/messages', auth, async (req, res) => {
   try {
-    const { to, content } = req.body;
+    const { to, content, type = 'text' } = req.body;
     const message = new Message({
       from: req.user.id,
       to,
-      content
+      content,
+      type
     });
     await message.save();
 

@@ -61,9 +61,21 @@ io.on('connection', (socket) => {
   console.log('Nouvelle connexion:', socket.id);
 
   // Associer l'utilisateur à son socket
-  socket.on('register', (userId) => {
+  socket.on('register', async (userId) => {
+    if (!userId) return;
+    
     users[userId] = socket.id;
-    console.log(`Utilisateur ${userId} enregistré avec le socket ${socket.id}`);
+    // Mettre à jour le statut en ligne et la dernière activité
+    await User.findByIdAndUpdate(userId, { 
+      isOnline: true,
+      lastActive: new Date()
+    });
+    // Émettre le changement de statut aux autres utilisateurs
+    socket.broadcast.emit('userStatusChanged', { 
+      userId, 
+      isOnline: true,
+      lastActive: new Date()
+    });
   });
 
   // Écouter les messages entrants
@@ -120,11 +132,23 @@ io.on('connection', (socket) => {
   });
 
   // Gérer la déconnexion
-  socket.on('disconnect', () => {
+  socket.on('disconnect', async () => {
     console.log('Déconnexion:', socket.id);
     for (const userId in users) {
       if (users[userId] === socket.id) {
         delete users[userId];
+        const now = new Date();
+        // Mettre à jour le statut hors ligne et la dernière activité
+        await User.findByIdAndUpdate(userId, {
+          isOnline: false,
+          lastActive: now
+        });
+        // Émettre le changement de statut aux autres utilisateurs
+        socket.broadcast.emit('userStatusChanged', { 
+          userId, 
+          isOnline: false,
+          lastActive: now
+        });
         console.log(`Utilisateur ${userId} déconnecté`);
         break;
       }

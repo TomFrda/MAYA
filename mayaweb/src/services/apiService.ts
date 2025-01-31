@@ -1,5 +1,4 @@
 import axios from 'axios';
-import { useEffect, useState } from 'react';
 import { LoginResponse, SignupResponse, Profile, Message, Chat } from '../types/api';
 
 axios.defaults.headers.common['Authorization'] = `Bearer ${localStorage.getItem('token')}`;
@@ -172,15 +171,26 @@ export const getMessages = async (token: string, chatId: string): Promise<Messag
 };
 
 // Envoyer un message
-export const sendMessage = async (token: string, to: string, content: string): Promise<Message> => {
-  const response = await axios.post<Message>(`${API_URL}/messages`, {
-    to,
-    content
-  }, {
-    headers: {
-      Authorization: `Bearer ${token}`
+export const sendMessage = async (
+  token: string, 
+  to: string, 
+  content: string, 
+  type: 'text' | 'gif' | 'sticker' = 'text'
+): Promise<Message> => {
+  const response = await axios.post<Message>(
+    `${API_URL}/messages`,
+    {
+      to,
+      content,
+      type,
+    },
+    {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json'
+      }
     }
-  });
+  );
   return response.data;
 };
 
@@ -200,28 +210,4 @@ export const deleteMessage = async (token: string, messageId: string): Promise<v
       Authorization: `Bearer ${token}`
     }
   });
-};
-
-// Charger les messages quand un chat est sélectionné
-const MessagesComponent = () => {
-  const [selectedChat, setSelectedChat] = useState<string | null>(null);
-  const [messages, setMessages] = useState<Message[]>([]);
-  const token = localStorage.getItem('token');
-
-  useEffect(() => {
-    const loadMessages = async () => {
-      if (selectedChat && token) {
-        try {
-          const messagesData = await getMessages(token, selectedChat);
-          setMessages(messagesData);
-        } catch (error) {
-          console.error('Error loading messages:', error);
-        }
-      }
-    };
-    
-    loadMessages();
-  }, [selectedChat, token]);
-
-  return null; // Replace with your component's JSX
 };

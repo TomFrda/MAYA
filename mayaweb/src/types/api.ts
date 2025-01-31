@@ -46,6 +46,7 @@ export interface Message {
   to: string;
   content: string;
   timestamp: Date;
+  type: 'text' | 'gif' | 'sticker';
 }
 
 export interface Chat {
@@ -53,5 +54,7 @@ export interface Chat {
   firstName: string;
   profilePhoto: string;
   lastMessage?: Message;
-  hasNewMessage?: boolean;  // Add this field
+  isOnline?: boolean;
+  lastActive?: Date;
+  hasNewMessage?: boolean;  // Ajout de cette propriété
 }
