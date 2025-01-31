@@ -374,6 +374,38 @@ router.get('/matches', auth, async (req, res) => {
   }
 });
 
+// Route pour unmatch un utilisateur
+router.delete('/matches/:matchId', auth, async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const matchId = req.params.matchId;
+
+    // Récupérer les deux utilisateurs
+    const user = await User.findById(userId);
+    const matchUser = await User.findById(matchId);
+
+    if (!user || !matchUser) {
+      return res.status(404).json({ message: 'Utilisateur non trouvé' });
+    }
+
+    // Retirer chaque utilisateur de la liste des matchs de l'autre
+    user.matches = user.matches.filter(id => id.toString() !== matchId);
+    matchUser.matches = matchUser.matches.filter(id => id.toString() !== userId);
+
+    // Retirer chaque utilisateur de la liste des likes de l'autre
+    user.likedProfiles = user.likedProfiles.filter(id => id.toString() !== matchId);
+    matchUser.likedProfiles = matchUser.likedProfiles.filter(id => id.toString() !== userId);
+
+    // Sauvegarder les modifications
+    await Promise.all([user.save(), matchUser.save()]);
+
+    res.status(200).json({ message: 'Unmatch effectué avec succès' });
+  } catch (error) {
+    console.error('Error unmatching:', error);
+    res.status(500).json({ message: 'Erreur lors du unmatch', error });
+  }
+});
+
 // Route pour récupérer les conversations
 router.get('/chats', auth, async (req, res) => {
   try {

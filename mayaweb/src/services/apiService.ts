@@ -150,6 +150,21 @@ export const getMatches = async (token: string): Promise<Profile[]> => {
   return response.data;
 };
 
+// Ajouter cette fonction avec les autres exports
+export const unmatchProfile = async (token: string, matchId: string) => {
+  if (!matchId) {
+    throw new Error('matchId is required');
+  }
+  console.log('Sending unmatch request for ID:', matchId); // Log pour déboguer
+  
+  const response = await axios.delete(`${API_URL}/matches/${matchId}`, { // Retirez /users/
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+  return response.data;
+};
+
 // Récupérer les conversations
 export const getChats = async (token: string): Promise<Chat[]> => {
   const response = await axios.get<Chat[]>(`${API_URL}/chats`, {

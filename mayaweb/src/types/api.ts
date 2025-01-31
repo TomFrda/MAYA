@@ -31,13 +31,17 @@ export interface SignupResponse {
 
 export interface Profile {
   id: string;
+  _id?: string;
   first_name: string;
+  name?: string;
+  age?: number;
+  bio?: string;
+  city?: string;
+  distance?: number;
+  interests?: string[];
+  isOnline?: boolean;
   profilePhotos: string[];
-  bio: string;
-  name: string;
-  age: number;
-  photos: string[];
-  // other properties...
+  photos?: string[];
 }
 
 export interface Message {
@@ -57,4 +61,10 @@ export interface Chat {
   isOnline?: boolean;
   lastActive?: Date;
   hasNewMessage?: boolean;  // Ajout de cette propriété
+}
+
+export interface UserStatus {
+  userId: string;
+  isOnline: boolean;
+  lastActive: Date;
 }
