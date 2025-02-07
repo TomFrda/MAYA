@@ -79,49 +79,78 @@ const removeProfilePhoto = async (req, res) => {
   }
 };
 
-// Contrôleur pour la connexion des utilisateurs
-const loginUser = async (req, res) => {
-  const { email, password } = req.body;
-
+// Contrôleur pour récupérer les informations de l'utilisateur
+const getUserInfo = async (req, res) => {
   try {
-    const user = await User.findOne({ email });
+    const userId = req.user.id;
+    const user = await User.findById(userId).select('-password'); // Exclure le mot de passe
     if (!user) {
       return res.status(404).json({ message: 'Utilisateur non trouvé' });
     }
-
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) {
-      return res.status(400).json({ message: 'Mot de passe incorrect' });
-    }
-
-    const token = jwt.sign({ id: user._id, email: user.email }, process.env.JWT_SECRET, { expiresIn: '1h' });
-
-    res.json({ message: 'Connexion réussie', token, user });
+    res.json(user);
   } catch (error) {
-    res.status(500).json({ message: 'Erreur lors de la connexion', error });
+    res.status(500).json({ message: 'Erreur lors de la récupération des informations de l\'utilisateur', error });
   }
 };
 
-// Contrôleur pour récupérer les informations de l'utilisateur
-const getUserInfo = async (req, res) => {
-    try {
-      const userId = req.user.id;
-  
-      const user = await User.findById(userId).select('-password'); // Exclure le mot de passe
-      if (!user) {
-        return res.status(404).json({ message: 'Utilisateur non trouvé' });
-      }
-  
-      res.json(user);
-    } catch (error) {
-      res.status(500).json({ message: 'Erreur lors de la récupération des informations de l\'utilisateur', error });
+const loginUser = async (req, res) => {
+  try {
+    const { email, password, latitude, longitude } = req.body;
+    console.log('Login attempt:', { email, latitude, longitude });
+
+    // Find user WITH password - important to explicitly select password
+    const user = await User.findOne({ email }).select('+password');
+    
+    if (!user) {
+      return res.status(400).json({ message: 'Invalid credentials' });
     }
-  };
-  
+
+    // Compare passwords
+    const isMatch = await bcrypt.compare(password, user.password);
+    console.log('Password verification:', { isMatch });
+
+    if (!isMatch) {
+      return res.status(400).json({ message: 'Invalid credentials' });
+    }
+
+    // Update location if provided
+    if (latitude && longitude) {
+      user.location = {
+        type: 'Point',
+        coordinates: [parseFloat(longitude), parseFloat(latitude)],
+        lastUpdated: new Date()
+      };
+      await user.save();
+    }
+
+    // Generate JWT token
+    const token = jwt.sign(
+      { id: user._id, email: user.email },
+      process.env.JWT_SECRET,
+      { expiresIn: '24h' }
+    );
+
+    // Return success response
+    res.status(200).json({
+      token,
+      user: {
+        id: user._id,
+        email: user.email,
+        first_name: user.first_name,
+        location: user.location,
+        profilePhotos: user.profilePhotos
+      }
+    });
+  } catch (error) {
+    console.error('Login error:', error);
+    res.status(500).json({ message: 'Server error during login' });
+  }
+};
+
 module.exports = {
   updateUserProfile,
   addProfilePhoto,
   removeProfilePhoto,
   loginUser,
-  getUserInfo, // Assurez-vous que getUserInfo est exporté
+  getUserInfo
 };
